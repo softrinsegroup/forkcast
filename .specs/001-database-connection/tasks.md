@@ -12,6 +12,7 @@
 - [x] Write a test that calls `init_db()` and asserts `get_db()` returns a connection
 - [x] Write a test that asserts `get_db()` raises `RuntimeError` before `init_db()` is called
 - [x] Write a test that calls `close_db()` and asserts the connection is cleaned up
+- [x] Write a test that asserts `init_db()` creates parent directories if they don't exist
 
 ## Verification
 
