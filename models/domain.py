@@ -25,3 +25,10 @@ class WeeklyPlan(BaseModel):
     timestamp: date
     recipe_ids: list[int]
     created_at: datetime
+
+
+class ShoppingItem(BaseModel):
+    ingredient_name: str
+    unit: str
+    amount: float
+    recipe_ids: list[int]
