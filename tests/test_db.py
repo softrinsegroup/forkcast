@@ -4,13 +4,6 @@ import storage.db as db_module
 from storage import init_db, get_db, close_db
 
 
-@pytest.fixture(autouse=True)
-async def reset_db(tmp_path):
-    yield
-    await close_db()
-    db_module._db = None
-
-
 async def test_init_db_creates_file(tmp_path):
     path = tmp_path / "test.db"
     await init_db(str(path))
