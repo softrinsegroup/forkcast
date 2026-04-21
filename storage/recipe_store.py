@@ -1,0 +1,99 @@
+import json
+from datetime import datetime
+from typing import Protocol
+from models.domain import Ingredient, Recipe
+from storage.db import get_db
+
+
+class IRecipeStore(Protocol):
+    async def create(self, recipe: Recipe) -> None: ...
+    async def get(self, id: int) -> Recipe | None: ...
+    async def get_all(self) -> list[Recipe]: ...
+    async def update(self, recipe: Recipe) -> None: ...
+    async def delete(self, id: int) -> None: ...
+
+
+class RecipeStore:
+    async def create(self, recipe: Recipe) -> None:
+        db = get_db()
+        async with db.execute("BEGIN"): pass
+        await db.execute(
+            "INSERT INTO recipes (id, name, instructions, servings, prep_minutes, cook_minutes, tags, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                recipe.id, recipe.name,
+                json.dumps(recipe.instructions),
+                recipe.servings, recipe.prep_minutes, recipe.cook_minutes,
+                json.dumps(recipe.tags),
+                recipe.created_at.isoformat(),
+            ),
+        )
+        for ingredient in recipe.ingredients:
+            await db.execute(
+                "INSERT INTO ingredients (id, recipe_id, name, unit, amount) VALUES (?, ?, ?, ?, ?)",
+                (ingredient.id, recipe.id, ingredient.name, ingredient.unit, ingredient.amount),
+            )
+        await db.commit()
+
+    async def get(self, id: int) -> Recipe | None:
+        db = get_db()
+        async with db.execute("SELECT * FROM recipes WHERE id = ?", (id,)) as cur:
+            row = await cur.fetchone()
+        if row is None:
+            return None
+        return await self._load_recipe(dict(row))
+
+    async def get_all(self) -> list[Recipe]:
+        db = get_db()
+        async with db.execute("SELECT * FROM recipes") as cur:
+            rows = await cur.fetchall()
+        return [await self._load_recipe(dict(row)) for row in rows]
+
+    async def update(self, recipe: Recipe) -> None:
+        db = get_db()
+        await db.execute(
+            "UPDATE recipes SET name=?, instructions=?, servings=?, prep_minutes=?, "
+            "cook_minutes=?, tags=?, created_at=? WHERE id=?",
+            (
+                recipe.name,
+                json.dumps(recipe.instructions),
+                recipe.servings, recipe.prep_minutes, recipe.cook_minutes,
+                json.dumps(recipe.tags),
+                recipe.created_at.isoformat(),
+                recipe.id,
+            ),
+        )
+        await db.execute("DELETE FROM ingredients WHERE recipe_id = ?", (recipe.id,))
+        for ingredient in recipe.ingredients:
+            await db.execute(
+                "INSERT INTO ingredients (id, recipe_id, name, unit, amount) VALUES (?, ?, ?, ?, ?)",
+                (ingredient.id, recipe.id, ingredient.name, ingredient.unit, ingredient.amount),
+            )
+        await db.commit()
+
+    async def delete(self, id: int) -> None:
+        db = get_db()
+        await db.execute("DELETE FROM recipes WHERE id = ?", (id,))
+        await db.commit()
+
+    async def _load_recipe(self, row: dict) -> Recipe:
+        db = get_db()
+        async with db.execute(
+            "SELECT * FROM ingredients WHERE recipe_id = ?", (row["id"],)
+        ) as cur:
+            ing_rows = await cur.fetchall()
+        ingredients = [
+            Ingredient(id=r["id"], name=r["name"], unit=r["unit"], amount=r["amount"])
+            for r in ing_rows
+        ]
+        return Recipe(
+            id=row["id"],
+            name=row["name"],
+            instructions=json.loads(row["instructions"]),
+            ingredients=ingredients,
+            servings=row["servings"],
+            prep_minutes=row["prep_minutes"],
+            cook_minutes=row["cook_minutes"],
+            tags=json.loads(row["tags"]),
+            created_at=datetime.fromisoformat(row["created_at"]),
+        )
