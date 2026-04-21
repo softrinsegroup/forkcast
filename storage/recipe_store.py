@@ -16,14 +16,18 @@ class IRecipeStore(Protocol):
 class RecipeStore:
     async def create(self, recipe: Recipe) -> None:
         db = get_db()
-        async with db.execute("BEGIN"): pass
+        async with db.execute("BEGIN"):
+            pass
         await db.execute(
             "INSERT INTO recipes (id, name, instructions, servings, prep_minutes, cook_minutes, tags, created_at) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (
-                recipe.id, recipe.name,
+                recipe.id,
+                recipe.name,
                 json.dumps(recipe.instructions),
-                recipe.servings, recipe.prep_minutes, recipe.cook_minutes,
+                recipe.servings,
+                recipe.prep_minutes,
+                recipe.cook_minutes,
                 json.dumps(recipe.tags),
                 recipe.created_at.isoformat(),
             ),
@@ -31,7 +35,13 @@ class RecipeStore:
         for ingredient in recipe.ingredients:
             await db.execute(
                 "INSERT INTO ingredients (id, recipe_id, name, unit, amount) VALUES (?, ?, ?, ?, ?)",
-                (ingredient.id, recipe.id, ingredient.name, ingredient.unit, ingredient.amount),
+                (
+                    ingredient.id,
+                    recipe.id,
+                    ingredient.name,
+                    ingredient.unit,
+                    ingredient.amount,
+                ),
             )
         await db.commit()
 
@@ -57,7 +67,9 @@ class RecipeStore:
             (
                 recipe.name,
                 json.dumps(recipe.instructions),
-                recipe.servings, recipe.prep_minutes, recipe.cook_minutes,
+                recipe.servings,
+                recipe.prep_minutes,
+                recipe.cook_minutes,
                 json.dumps(recipe.tags),
                 recipe.created_at.isoformat(),
                 recipe.id,
@@ -67,7 +79,13 @@ class RecipeStore:
         for ingredient in recipe.ingredients:
             await db.execute(
                 "INSERT INTO ingredients (id, recipe_id, name, unit, amount) VALUES (?, ?, ?, ?, ?)",
-                (ingredient.id, recipe.id, ingredient.name, ingredient.unit, ingredient.amount),
+                (
+                    ingredient.id,
+                    recipe.id,
+                    ingredient.name,
+                    ingredient.unit,
+                    ingredient.amount,
+                ),
             )
         await db.commit()
 

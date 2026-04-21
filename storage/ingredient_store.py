@@ -16,7 +16,13 @@ class IngredientStore:
         db = get_db()
         await db.execute(
             "INSERT INTO ingredients (id, recipe_id, name, unit, amount) VALUES (?, ?, ?, ?, ?)",
-            (ingredient.id, recipe_id, ingredient.name, ingredient.unit, ingredient.amount),
+            (
+                ingredient.id,
+                recipe_id,
+                ingredient.name,
+                ingredient.unit,
+                ingredient.amount,
+            ),
         )
         await db.commit()
 
@@ -26,7 +32,9 @@ class IngredientStore:
             row = await cur.fetchone()
         if row is None:
             return None
-        return Ingredient(id=row["id"], name=row["name"], unit=row["unit"], amount=row["amount"])
+        return Ingredient(
+            id=row["id"], name=row["name"], unit=row["unit"], amount=row["amount"]
+        )
 
     async def get_all(self) -> list[Ingredient]:
         db = get_db()
