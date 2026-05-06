@@ -2,10 +2,12 @@ import os
 from dotenv import load_dotenv
 from telegram.ext import Application
 from storage import init_db, close_db
+from .client import init as init_client
 
 
 async def post_init(application: Application) -> None:
     await init_db(os.getenv("DATABASE_PATH", "data/meal_prep.db"))
+    init_client()
 
 
 async def post_shutdown(application: Application) -> None:
