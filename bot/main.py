@@ -21,7 +21,7 @@ def run() -> None:
     print("Connecting Telegram bot...")
     app = (
         Application.builder()
-        .token(os.getenv("TELEGRAM_BOT_TOKEN", ""))
+        .token(os.environ["TELEGRAM_BOT_TOKEN"])
         .post_init(post_init)
         .post_shutdown(post_shutdown)
         .build()
