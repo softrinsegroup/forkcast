@@ -17,16 +17,26 @@ class ClassifiedIntent(BaseModel):
 
 
 async def classify(message: str, client: AsyncAnthropic) -> ClassifiedIntent:
-    message = await client.messages.create(
+    resp = await client.messages.create(
         model="claude-haiku-4-5",
         max_tokens=64,
-        system=[{"type": "text", "text": CLASSIFY_INTENT_PROMPT}],
+        system=[
+            {
+                "type": "text",
+                "text": CLASSIFY_INTENT_PROMPT,
+                "cache_control": {"type": "ephemeral"},
+            }
+        ],
         tools=[CLASSIFY_INTENT_TOOL],
         tool_choice={"type": "tool", "name": "classify_intent"},
         messages=[
             {
                 "role": "user",
-                "content": f"Classify this mesage: {message}",
+                "content": f"Classify this message: {message}",
             }
         ],
     )
+
+    intent = resp.content[0].input["intent"]
+    confidence = resp.content[0].input["confidence"]
+    return ClassifiedIntent(intent=intent, confidence=confidence)
