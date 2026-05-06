@@ -8,6 +8,7 @@ from .client import init as init_client
 async def post_init(application: Application) -> None:
     await init_db(os.getenv("DATABASE_PATH", "data/meal_prep.db"))
     init_client()
+    print("Bot is ready for your command 🤖")
 
 
 async def post_shutdown(application: Application) -> None:
