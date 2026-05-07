@@ -36,7 +36,7 @@ class WeeklyPlanStore:
             return None
         return self._row_to_plan(row)
 
-    async def get_last_weekly_plan(self) -> WeeklyPlan | None:
+    async def get_last_weekly_plan_recipe_ids(self) -> WeeklyPlan | None:
         today = date.today()
         this_monday = today - timedelta(days=today.weekday())
         last_monday = this_monday - timedelta(weeks=1)

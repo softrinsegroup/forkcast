@@ -14,7 +14,10 @@ async def meal_plan_workflow(client: AsyncAnthropic) -> str:
 
     # Fetch previous weekly_plan
     weekly_plan_store = WeeklyPlanStore()
-    prev_weekly_plan = weekly_plan_store.get_nearest_by_date(date.today())
+    prev_weekly_plan = weekly_plan_store.get_last_weekly_plan_recipe_ids()
+    prev_recipe_ids = (
+        prev_weekly_plan.recipe_ids if prev_weekly_plan is not None else []
+    )
 
     # Call LLM to get new plan with minimal overlap
     llm_resp = await client.messages.create(
