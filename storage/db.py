@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from typing import Any, AsyncGenerator
 import aiosqlite
 from pathlib import Path
 from yoyo import read_migrations, get_backend
@@ -38,7 +39,7 @@ def get_db() -> aiosqlite.Connection:
 
 
 @asynccontextmanager
-async def transaction() -> None:
+async def transaction() -> AsyncGenerator[Any, Any]:
     db = await get_db()
     await db.execute("BEGIN")
     try:
