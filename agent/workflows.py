@@ -52,8 +52,9 @@ async def meal_plan_workflow(client: AsyncAnthropic) -> str:
     notes = resp.content[0].input["notes"]
 
     # Raise exception if picked a non-existent recipe_id
-    if not all(True for recipe_id in recipe_ids if recipe_id in recipes):
-        raise Exception(f"Could not find recipe_id {recipe_id}")
+    missing_recipe_ids = [rid for rid in recipe_ids if rid not in recipes]
+    if missing_recipe_ids:
+        raise Exception(f"Could not find recipe_ids: {missing_recipe_ids}")
 
     async with transaction():
         # Create weekly_plan
