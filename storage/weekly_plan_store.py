@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 from typing import Protocol
 
 from models.domain import WeeklyPlan
@@ -16,7 +16,7 @@ class IWeeklyPlanStore(Protocol):
 
 
 class WeeklyPlanStore:
-    async def create(self, plan: WeeklyPlan) -> None:
+    async def create(self, plan: WeeklyPlan, commit: bool = True) -> None:
         db = get_db()
         await db.execute(
             "INSERT INTO weekly_plans (id, timestamp, recipe_ids, created_at) VALUES (?, ?, ?, ?)",
@@ -27,7 +27,8 @@ class WeeklyPlanStore:
                 plan.created_at.isoformat(),
             ),
         )
-        await db.commit()
+        if commit:
+            await db.commit()
 
     async def get(self, id: int) -> WeeklyPlan | None:
         db = get_db()

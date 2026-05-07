@@ -68,3 +68,4 @@ async def meal_plan_workflow(client: AsyncAnthropic) -> str:
             agg_ingredients[ingredient] += ingredient.amount
 
     # Create shopping_items
+    shopping_items = []
