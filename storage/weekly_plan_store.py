@@ -4,6 +4,7 @@ from typing import Protocol
 
 from models.domain import WeeklyPlan
 from storage.db import get_db
+import utils.date
 
 
 class IWeeklyPlanStore(Protocol):
@@ -37,9 +38,7 @@ class WeeklyPlanStore:
         return self._row_to_plan(row)
 
     async def get_last_weekly_plan_recipe_ids(self) -> WeeklyPlan | None:
-        today = date.today()
-        this_monday = today - timedelta(days=today.weekday())
-        last_monday = this_monday - timedelta(weeks=1)
+        last_monday = utils.date.last_monday()
 
         db = get_db()
         async with db.execute(

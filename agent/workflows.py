@@ -3,8 +3,10 @@ from anthropic import AsyncAnthropic
 
 from agent.prompts import MEAL_PLAN_PROMPT
 from agent.tools import CREATE_MEAL_PLAN_TOOL
+from models.domain import WeeklyPlan
 from storage.recipe_store import RecipeStore
 from storage.weekly_plan_store import WeeklyPlanStore
+import utils.date
 
 
 async def meal_plan_workflow(client: AsyncAnthropic) -> str:
@@ -22,7 +24,7 @@ async def meal_plan_workflow(client: AsyncAnthropic) -> str:
         f"Recipe bank:\n{json.dumps(recipes)}\n\n"
         f"Previous recipe_ids: {json.dumps(prev_recipe_ids)}"
     )
-    llm_resp = await client.messages.create(
+    resp = await client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=512,
         system=[
@@ -43,6 +45,13 @@ async def meal_plan_workflow(client: AsyncAnthropic) -> str:
     )
 
     # Validate recipe_ids
+    recipe_ids = resp.content[0].input["recipe_ids"]
+    notes = resp.content[0].input["notes"]
+    weekly_plan = WeeklyPlan(
+        timestamp=utils.date.this_monday(),
+        recipe_ids=recipe_ids,
+        created_at=utils.date.today(),
+    )
 
     # Aggregate ingredients
 
