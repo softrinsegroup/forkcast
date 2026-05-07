@@ -1,4 +1,7 @@
+from datetime import date
+
 from storage.recipe_store import RecipeStore
+from storage.weekly_plan_store import WeeklyPlanStore
 
 
 def meal_plan_workflow() -> str:
@@ -7,6 +10,8 @@ def meal_plan_workflow() -> str:
     recipes.get_all()
 
     # Fetch previous weekly_plan
+    weekly_plans = WeeklyPlanStore()
+    weekly_plans.get_nearest_by_date(date.today())
 
     # Call LLM to get new plan with minimal overlap
 

@@ -1,6 +1,7 @@
 import json
 from datetime import datetime, date
 from typing import Protocol
+
 from models.domain import WeeklyPlan
 from storage.db import get_db
 
