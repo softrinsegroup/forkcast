@@ -40,7 +40,7 @@ def get_db() -> aiosqlite.Connection:
 
 @asynccontextmanager
 async def transaction() -> AsyncGenerator[Any, Any]:
-    db = await get_db()
+    db = get_db()
     await db.execute("BEGIN")
     try:
         yield db

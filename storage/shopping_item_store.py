@@ -20,7 +20,6 @@ class ShoppingItemStore:
             "INSERT INTO shopping_items (weekly_plan_id, ingredient_name, unit, amount) "
             "VALUES (?, ?, ?, ?)",
             (
-                item.id,
                 item.weekly_plan_id,
                 item.ingredient_name,
                 item.unit,

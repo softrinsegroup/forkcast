@@ -49,7 +49,7 @@ class WeeklyPlanStore:
             row = await cur.fetchone()
         if row is None:
             return None
-        return await self._load_recipe(dict(row))
+        return self._row_to_plan(row)
 
     async def get_all(self) -> list[WeeklyPlan]:
         db = get_db()
