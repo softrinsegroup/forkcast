@@ -3,14 +3,14 @@ from datetime import datetime, date
 
 
 class Ingredient(BaseModel):
-    id: int
+    id: int | None = None
     name: str
     unit: str
     amount: float
 
 
 class Recipe(BaseModel):
-    id: int
+    id: int | None = None
     name: str
     instructions: list[str]
     ingredients: list[Ingredient]
@@ -22,14 +22,14 @@ class Recipe(BaseModel):
 
 
 class WeeklyPlan(BaseModel):
-    id: int
+    id: int | None = None
     timestamp: date
     recipe_ids: list[int]
     created_at: datetime
 
 
 class ShoppingItem(BaseModel):
-    id: int
+    id: int | None = None
     weekly_plan_id: int
     ingredient_name: str
     unit: str

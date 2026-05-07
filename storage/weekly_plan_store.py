@@ -1,8 +1,10 @@
 import json
 from datetime import datetime, date
 from typing import Protocol
+
 from models.domain import WeeklyPlan
 from storage.db import get_db
+import utils.date
 
 
 class IWeeklyPlanStore(Protocol):
@@ -14,22 +16,36 @@ class IWeeklyPlanStore(Protocol):
 
 
 class WeeklyPlanStore:
-    async def create(self, plan: WeeklyPlan) -> None:
+    async def create(self, plan: WeeklyPlan, commit: bool = True) -> int:
         db = get_db()
-        await db.execute(
-            "INSERT INTO weekly_plans (id, timestamp, recipe_ids, created_at) VALUES (?, ?, ?, ?)",
+        cur = await db.execute(
+            "INSERT INTO weekly_plans (timestamp, recipe_ids, created_at) VALUES (?, ?, ?)",
             (
-                plan.id,
                 plan.timestamp.isoformat(),
                 json.dumps(plan.recipe_ids),
                 plan.created_at.isoformat(),
             ),
         )
-        await db.commit()
+        if commit:
+            await db.commit()
+        return cur.lastrowid
 
     async def get(self, id: int) -> WeeklyPlan | None:
         db = get_db()
         async with db.execute("SELECT * FROM weekly_plans WHERE id = ?", (id,)) as cur:
+            row = await cur.fetchone()
+        if row is None:
+            return None
+        return self._row_to_plan(row)
+
+    async def get_last_weekly_plan_recipe_ids(self) -> WeeklyPlan | None:
+        last_monday = utils.date.last_monday()
+
+        db = get_db()
+        async with db.execute(
+            "SELECT * FROM weekly_plans WHERE timestamp = ? LIMIT 1",
+            (last_monday.isoformat(),),
+        ) as cur:
             row = await cur.fetchone()
         if row is None:
             return None

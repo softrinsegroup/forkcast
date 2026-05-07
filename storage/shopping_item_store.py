@@ -1,4 +1,5 @@
 from typing import Protocol
+
 from models.domain import ShoppingItem
 from storage.db import get_db
 
@@ -13,18 +14,27 @@ class IShoppingItemStore(Protocol):
 
 
 class ShoppingItemStore:
-    async def create(self, item: ShoppingItem) -> None:
+    async def create(self, item: ShoppingItem, commit: bool = True) -> int:
         db = get_db()
-        await db.execute(
-            "INSERT INTO shopping_items (id, weekly_plan_id, ingredient_name, unit, amount) "
-            "VALUES (?, ?, ?, ?, ?)",
-            (item.id, item.weekly_plan_id, item.ingredient_name, item.unit, item.amount),
+        cur = await db.execute(
+            "INSERT INTO shopping_items (weekly_plan_id, ingredient_name, unit, amount) "
+            "VALUES (?, ?, ?, ?)",
+            (
+                item.weekly_plan_id,
+                item.ingredient_name,
+                item.unit,
+                item.amount,
+            ),
         )
-        await db.commit()
+        if commit:
+            await db.commit()
+        return cur.lastrowid
 
     async def get(self, id: int) -> ShoppingItem | None:
         db = get_db()
-        async with db.execute("SELECT * FROM shopping_items WHERE id = ?", (id,)) as cur:
+        async with db.execute(
+            "SELECT * FROM shopping_items WHERE id = ?", (id,)
+        ) as cur:
             row = await cur.fetchone()
         if row is None:
             return None

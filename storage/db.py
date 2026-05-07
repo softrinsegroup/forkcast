@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+from typing import Any, AsyncGenerator
 import aiosqlite
 from pathlib import Path
 from yoyo import read_migrations, get_backend
@@ -34,6 +36,18 @@ def get_db() -> aiosqlite.Connection:
         raise RuntimeError("Database not initialized. Call init_db() first.")
 
     return _db
+
+
+@asynccontextmanager
+async def transaction() -> AsyncGenerator[Any, Any]:
+    db = get_db()
+    await db.execute("BEGIN")
+    try:
+        yield db
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
 
 
 async def close_db() -> None:

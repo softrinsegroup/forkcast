@@ -20,7 +20,7 @@ CREATE_MEAL_PLAN_TOOL = {
         "properties": {
             "recipe_ids": {
                 "type": "array",
-                "items": {"type": "string"},
+                "items": {"type": "number"},
                 "minItems": 5,
                 "maxItems": 5,
             },

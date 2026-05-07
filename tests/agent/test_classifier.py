@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 from pydantic import ValidationError
 
-from agent.classifier import classify, Intent, ClassifiedIntent
+from agent import classify, Intent, ClassifiedIntent
 
 
 def make_mock_client(intent: str, confidence: float) -> AsyncMock:
