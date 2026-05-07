@@ -13,7 +13,9 @@ import utils.date
 # ---------------------------------------------------------------------------
 
 
-def make_ingredient(name: str = "Chicken", unit: str = "g", amount: float = 200.0) -> Ingredient:
+def make_ingredient(
+    name: str = "Chicken", unit: str = "g", amount: float = 200.0
+) -> Ingredient:
     return Ingredient(name=name, unit=unit, amount=amount)
 
 
@@ -27,9 +29,9 @@ def make_recipe(
         id=id,
         name=name,
         instructions=["Step 1"],
-        ingredients=ingredients if ingredients is not None else [
-            Ingredient(id=id * 100 + 1, name="Chicken", unit="g", amount=200.0)
-        ],
+        ingredients=ingredients
+        if ingredients is not None
+        else [Ingredient(id=id * 100 + 1, name="Chicken", unit="g", amount=200.0)],
         servings=2,
         prep_minutes=5,
         cook_minutes=10,
@@ -61,7 +63,9 @@ async def db(tmp_path):
 @pytest.fixture
 async def workflow(db):
     client = make_mock_client([1, 2, 3, 4, 5])
-    return MealPlanWorkflow(client, RecipeStore(), WeeklyPlanStore(), ShoppingItemStore())
+    return MealPlanWorkflow(
+        client, RecipeStore(), WeeklyPlanStore(), ShoppingItemStore()
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -79,7 +83,12 @@ async def test_fetch_recipe_bank_populated(db):
     for i in range(1, 4):
         await recipe_store.create(make_recipe(i, name=f"Recipe {i}"))
 
-    wf = MealPlanWorkflow(make_mock_client([1, 2, 3]), recipe_store, WeeklyPlanStore(), ShoppingItemStore())
+    wf = MealPlanWorkflow(
+        make_mock_client([1, 2, 3]),
+        recipe_store,
+        WeeklyPlanStore(),
+        ShoppingItemStore(),
+    )
     await wf._fetch_recipe_bank()
 
     assert len(wf.recipe_bank) == 3
@@ -90,7 +99,9 @@ async def test_fetch_recipe_bank_keys_are_ids(db):
     recipe_store = RecipeStore()
     await recipe_store.create(make_recipe(id=42, name="Soup"))
 
-    wf = MealPlanWorkflow(make_mock_client([42]), recipe_store, WeeklyPlanStore(), ShoppingItemStore())
+    wf = MealPlanWorkflow(
+        make_mock_client([42]), recipe_store, WeeklyPlanStore(), ShoppingItemStore()
+    )
     await wf._fetch_recipe_bank()
 
     assert 42 in wf.recipe_bank
@@ -116,7 +127,9 @@ async def test_fetch_prev_recipe_ids_existing_plan(db):
     )
     await plan_store.create(plan)
 
-    wf = MealPlanWorkflow(make_mock_client([1]), RecipeStore(), plan_store, ShoppingItemStore())
+    wf = MealPlanWorkflow(
+        make_mock_client([1]), RecipeStore(), plan_store, ShoppingItemStore()
+    )
     await wf._fetch_prev_recipe_ids()
 
     assert wf.prev_recipe_ids == [10, 20, 30]
@@ -224,30 +237,42 @@ async def test_persist_aggregates_shared_ingredients(db):
     await recipe_store.create(r1)
     await recipe_store.create(r2)
 
-    wf = MealPlanWorkflow(make_mock_client([1, 2]), recipe_store, WeeklyPlanStore(), ShoppingItemStore())
+    wf = MealPlanWorkflow(
+        make_mock_client([1, 2]), recipe_store, WeeklyPlanStore(), ShoppingItemStore()
+    )
     await wf._fetch_recipe_bank()
     wf.new_recipe_ids = [1, 2]
     await wf._persist_weekly_plan()
 
-    chicken_items = [si for si in wf.new_shopping_items if si.ingredient_name == "Chicken"]
+    chicken_items = [
+        si for si in wf.new_shopping_items if si.ingredient_name == "Chicken"
+    ]
     assert len(chicken_items) == 1
     assert chicken_items[0].amount == 250.0
 
 
 async def test_persist_creates_one_shopping_item_per_unique_ingredient(db):
-    r1 = make_recipe(1, ingredients=[
-        make_ingredient("Chicken", "g", 100.0),
-        make_ingredient("Rice", "g", 150.0),
-    ])
-    r2 = make_recipe(2, ingredients=[
-        make_ingredient("Broccoli", "g", 80.0),
-        make_ingredient("Garlic", "clove", 2.0),
-    ])
+    r1 = make_recipe(
+        1,
+        ingredients=[
+            make_ingredient("Chicken", "g", 100.0),
+            make_ingredient("Rice", "g", 150.0),
+        ],
+    )
+    r2 = make_recipe(
+        2,
+        ingredients=[
+            make_ingredient("Broccoli", "g", 80.0),
+            make_ingredient("Garlic", "clove", 2.0),
+        ],
+    )
     recipe_store = RecipeStore()
     await recipe_store.create(r1)
     await recipe_store.create(r2)
 
-    wf = MealPlanWorkflow(make_mock_client([1, 2]), recipe_store, WeeklyPlanStore(), ShoppingItemStore())
+    wf = MealPlanWorkflow(
+        make_mock_client([1, 2]), recipe_store, WeeklyPlanStore(), ShoppingItemStore()
+    )
     await wf._fetch_recipe_bank()
     wf.new_recipe_ids = [1, 2]
     await wf._persist_weekly_plan()
@@ -306,7 +331,9 @@ async def test_format_message_lists_shopping_items(workflow):
         created_at=datetime(2026, 4, 20, 12, 0, 0),
     )
     workflow.new_shopping_items = [
-        ShoppingItem(weekly_plan_id=1, ingredient_name="Chicken", unit="g", amount=200.0)
+        ShoppingItem(
+            weekly_plan_id=1, ingredient_name="Chicken", unit="g", amount=200.0
+        )
     ]
 
     msg = workflow._format_message()
@@ -337,9 +364,9 @@ async def test_run_returns_string(db):
 async def test_run_persists_weekly_plan_and_items(db):
     recipe_store = RecipeStore()
     for i in range(1, 6):
-        await recipe_store.create(make_recipe(
-            i, ingredients=[make_ingredient(f"ing{i}", "g", 100.0)]
-        ))
+        await recipe_store.create(
+            make_recipe(i, ingredients=[make_ingredient(f"ing{i}", "g", 100.0)])
+        )
 
     plan_store = WeeklyPlanStore()
     item_store = ShoppingItemStore()
