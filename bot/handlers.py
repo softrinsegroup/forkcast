@@ -42,4 +42,9 @@ def split_message(text: str, limit: int = 4096) -> list[str]:
             chunks.append("\n".join(curr_chunk))
             curr_chunk.clear()
             curr_len = 0
+
+    # Append last chunk if not empty
+    if curr_len > 0:
+        chunks.append("\n".join(curr_chunk))
+
     return chunks
