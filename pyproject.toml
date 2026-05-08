@@ -1,6 +1,7 @@
 [project]
 name = "meal-prep-agent"
 version = "0.1.0"
+license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
     "anthropic>=0.40.0",
@@ -12,17 +13,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = [
-    "pytest>=8.0", 
-    "pytest-asyncio>=0.24"
-]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.24"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 pythonpath = ["."]
-filterwarnings = [
-    "ignore::DeprecationWarning:yoyo",
-]
+filterwarnings = ["ignore::DeprecationWarning:yoyo"]
 
 [tool.ruff]
 line-length = 88
@@ -31,7 +27,4 @@ line-length = 88
 quote-style = "double"
 
 [dependency-groups]
-dev = [
-    "pytest>=9.0.3",
-    "pytest-asyncio>=1.3.0",
-]
+dev = ["pytest>=9.0.3", "pytest-asyncio>=1.3.0"]
