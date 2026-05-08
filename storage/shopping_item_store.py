@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from models.domain import ShoppingItem
+from models import ShoppingItem
 from storage.db import get_db
 
 

@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 from typing import Protocol
-from models.domain import Ingredient, Recipe
+from models import Ingredient, Recipe
 from storage.db import get_db
 
 

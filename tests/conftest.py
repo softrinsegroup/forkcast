@@ -1,4 +1,5 @@
 import pytest
+
 import storage.db as db_module
 from storage import close_db
 

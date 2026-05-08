@@ -1,4 +1,3 @@
-import os
 from anthropic import AsyncAnthropic
 
 

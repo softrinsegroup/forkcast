@@ -1,12 +1,20 @@
 import pytest
 from datetime import datetime, date
-from storage import init_db, RecipeStore, IngredientStore, WeeklyPlanStore, ShoppingItemStore
-from models.domain import Ingredient, Recipe, WeeklyPlan, ShoppingItem
+
+from storage import (
+    init_db,
+    RecipeStore,
+    IngredientStore,
+    WeeklyPlanStore,
+    ShoppingItemStore,
+)
+from models import Ingredient, Recipe, WeeklyPlan, ShoppingItem
 
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 async def db(tmp_path):
@@ -15,13 +23,16 @@ async def db(tmp_path):
 
 def make_recipe(id: int = 1, name: str = "Pasta") -> Recipe:
     return Recipe(
-        id=id, name=name,
+        id=id,
+        name=name,
         instructions=["Boil water", "Cook pasta"],
         ingredients=[
             Ingredient(id=id * 10 + 1, name="Pasta", unit="g", amount=200),
             Ingredient(id=id * 10 + 2, name="Salt", unit="tsp", amount=1),
         ],
-        servings=2, prep_minutes=5, cook_minutes=10,
+        servings=2,
+        prep_minutes=5,
+        cook_minutes=10,
         tags=["easy", "italian"],
         created_at=datetime(2026, 4, 20, 12, 0, 0),
     )
@@ -38,8 +49,11 @@ def make_plan(id: int = 1, recipe_ids: list[int] | None = None) -> WeeklyPlan:
 
 def make_item(id: int = 1, weekly_plan_id: int = 1) -> ShoppingItem:
     return ShoppingItem(
-        id=id, weekly_plan_id=weekly_plan_id,
-        ingredient_name="Pasta", unit="g", amount=400,
+        id=id,
+        weekly_plan_id=weekly_plan_id,
+        ingredient_name="Pasta",
+        unit="g",
+        amount=400,
     )
 
 
@@ -47,19 +61,20 @@ def make_item(id: int = 1, weekly_plan_id: int = 1) -> ShoppingItem:
 # Migrations
 # ---------------------------------------------------------------------------
 
+
 async def test_migrations_create_tables(tmp_path):
     await init_db(str(tmp_path / "test.db"))
     from storage.db import get_db
+
     db = get_db()
-    async with db.execute(
-        "SELECT name FROM sqlite_master WHERE type='table'"
-    ) as cur:
+    async with db.execute("SELECT name FROM sqlite_master WHERE type='table'") as cur:
         tables = {row["name"] for row in await cur.fetchall()}
     assert {"recipes", "ingredients", "weekly_plans", "shopping_items"}.issubset(tables)
 
 
 async def test_migrations_idempotent(tmp_path):
     from storage.db import apply_migrations
+
     path = str(tmp_path / "test.db")
     apply_migrations(path)
     apply_migrations(path)  # second call should not raise
@@ -68,6 +83,7 @@ async def test_migrations_idempotent(tmp_path):
 # ---------------------------------------------------------------------------
 # RecipeStore
 # ---------------------------------------------------------------------------
+
 
 async def test_recipe_create_and_get(db):
     store = RecipeStore()
@@ -146,6 +162,7 @@ async def test_recipe_delete_nonexistent_no_error(db):
 # IngredientStore
 # ---------------------------------------------------------------------------
 
+
 async def test_ingredient_create_and_get(db):
     await RecipeStore().create(make_recipe())
     store = IngredientStore()
@@ -195,6 +212,7 @@ async def test_ingredient_cascade_delete_via_recipe(db):
 # ---------------------------------------------------------------------------
 # WeeklyPlanStore
 # ---------------------------------------------------------------------------
+
 
 async def test_weekly_plan_create_and_get(db):
     store = WeeklyPlanStore()
@@ -253,6 +271,7 @@ async def test_weekly_plan_delete_nonexistent_no_error(db):
 # ---------------------------------------------------------------------------
 # ShoppingItemStore
 # ---------------------------------------------------------------------------
+
 
 async def test_shopping_item_create_and_get(db):
     await WeeklyPlanStore().create(make_plan())
