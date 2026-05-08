@@ -1,7 +1,4 @@
 class ChatWorkflow:
-    def __init__(self):
-        pass
-
     def run(self) -> str:
         return (
             "I can help you plan meals and add recipes. "
