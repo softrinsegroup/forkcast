@@ -13,6 +13,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     user_message = update.message.text
     print("User:", user_message)
 
+    # Handle PendingAction and stop if handled
+    if _handle_pending_action(update, context, user_message):
+        return
+
     # Call LLM
     bot_reply, pending_action = await route(
         user_message,
@@ -24,22 +28,48 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     print("Bot:", bot_reply)
 
     # Handle multi-step actions
-    _handle_pending_action(pending_action, context)
+    _store_pending_action(pending_action, context)
 
-    for chunk in _split_message(bot_reply, limit=4096):
-        await update.message.reply_text(chunk, parse_mode="Markdown")
+    # Send reply
+    await _send_reply(update, bot_reply)
 
 
-def _handle_pending_action(
+def _store_pending_action(
     action: PendingAction | None, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
     # No pending action, do nothing
     if action is None:
         return
 
-    match action.type:
-        case "confirm_recipe":
-            context.user_data["pending_action"] = action
+    # Store pending action in context
+    context.user_data["pending_action"] = action
+
+
+async def _handle_pending_action(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user_message: str
+) -> bool:
+    if "pending_action" in context.user_data:
+        pending_action: PendingAction = context.user_data.pop("pending_action")
+        match pending_action.type:
+            case "confirm_recipe":
+                bot_reply = await _handle_confirm_recipe_message(user_message, context)
+                await _send_reply(update, bot_reply)
+        return True
+
+    return False
+
+
+async def _handle_confirm_recipe_message(
+    user_message: str, context: ContextTypes.DEFAULT_TYPE
+) -> str:
+    user_message = user_message.strip().lower()
+    if user_message in ("yes", "y"):
+        recipe = context.user_data["pending_action"].data["recipe"]
+        recipe_store = context.bot_data["recipe_store"]
+        await recipe_store.create(recipe)
+        return "Recipe saved"
+    else:
+        return "Cancelled"
 
 
 def _split_message(text: str, limit: int = 4096) -> list[str]:
@@ -65,3 +95,8 @@ def _split_message(text: str, limit: int = 4096) -> list[str]:
         chunks.append("\n".join(curr_chunk))
 
     return chunks
+
+
+async def _send_reply(update: Update, bot_reply: str):
+    for chunk in _split_message(bot_reply, limit=4096):
+        await update.message.reply_text(chunk, parse_mode="Markdown")
