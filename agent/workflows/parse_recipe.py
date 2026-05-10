@@ -6,18 +6,15 @@ from agent.prompts import PARSE_RECIPE_PROMPT
 from agent.tools import PARSE_RECIPE_TOOL
 from agent.workflows import Workflow
 from models import Recipe, PendingAction
-from storage import RecipeStore
 
 
 class ParseRecipeWorkflow(Workflow):
     def __init__(
         self,
         client: AsyncAnthropic,
-        recipe_store: RecipeStore,
         url: str,
     ):
         self.client = client
-        self.recipe_store = recipe_store
         self.url = url
 
         self.recipe: Recipe | None = None
@@ -60,9 +57,11 @@ class ParseRecipeWorkflow(Workflow):
 
         # Parse outputs
         tool_block = next(b for b in resp.content if b.type == "tool_use")
-        input = tool_block.input
+        tool_input = tool_block.input
         try:
-            recipe = Recipe.model_validate({**input, "created_at": datetime.today()})
+            recipe = Recipe.model_validate(
+                {**tool_input, "created_at": datetime.today()}
+            )
             self.recipe = recipe
         except ValidationError as e:
             print(f"Error parsing Recipe: {e.errors()[0]['msg']}")
@@ -82,7 +81,7 @@ class ParseRecipeWorkflow(Workflow):
         return (
             f"I've parsed your recipe. If it looks correct, reply with 'yes' or 'no'.\n"
             f"Name: {self.recipe.name}\n"
-            f"Tags: {self.recipe.tags}\n"
+            f"Tags: {', '.join(self.recipe.tags)}\n"
             f"Prep Mins: {self.recipe.prep_minutes}\n"
             f"Cook Mins: {self.recipe.cook_minutes}\n"
             f"Servings: {self.recipe.servings}\n\n"

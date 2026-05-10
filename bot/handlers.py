@@ -3,6 +3,8 @@ from telegram.ext import ContextTypes
 
 from agent import route
 from agent.workflows import PendingAction
+from models import Recipe
+from storage import RecipeStore
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -14,7 +16,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     print("User:", user_message)
 
     # Handle PendingAction and stop if handled
-    if _handle_pending_action(update, context, user_message):
+    if await _handle_pending_action(update, context, user_message):
         return
 
     # Call LLM
@@ -52,20 +54,24 @@ async def _handle_pending_action(
         pending_action: PendingAction = context.user_data.pop("pending_action")
         match pending_action.type:
             case "confirm_recipe":
-                bot_reply = await _handle_confirm_recipe_message(user_message, context)
+                bot_reply = await _handle_confirm_recipe_message(
+                    user_message, context, pending_action
+                )
                 await _send_reply(update, bot_reply)
+            case _:
+                print(f"Unhandled PendingAction: {pending_action.type}")
         return True
 
     return False
 
 
 async def _handle_confirm_recipe_message(
-    user_message: str, context: ContextTypes.DEFAULT_TYPE
+    user_message: str, context: ContextTypes.DEFAULT_TYPE, pending_action: PendingAction
 ) -> str:
     user_message = user_message.strip().lower()
     if user_message in ("yes", "y"):
-        recipe = context.user_data["pending_action"].data["recipe"]
-        recipe_store = context.bot_data["recipe_store"]
+        recipe_store: RecipeStore = context.bot_data["recipe_store"]
+        recipe: Recipe = pending_action.data["recipe"]
         await recipe_store.create(recipe)
         return "Recipe saved"
     else:

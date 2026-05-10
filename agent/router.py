@@ -24,7 +24,7 @@ async def route(
 
         case Intent.PARSE_RECIPE:
             url = extract_url(message)
-            return await ParseRecipeWorkflow(client, recipe_store, url).run()
+            return await ParseRecipeWorkflow(client, url).run()
 
         case Intent.CHAT:
             return await ChatWorkflow().run()
