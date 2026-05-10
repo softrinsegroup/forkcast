@@ -1,1 +1,1 @@
-from .domain import Ingredient, Recipe, WeeklyPlan, ShoppingItem
+from .domain import Ingredient, Recipe, WeeklyPlan, ShoppingItem, PendingAction
