@@ -47,6 +47,7 @@ class RecipeStore:
                 ),
             )
         await self.db.commit()
+        print(f"{recipe.name} Recipe saved")
 
     async def get(self, id: int) -> Recipe | None:
         async with self.db.execute("SELECT * FROM recipes WHERE id = ?", (id,)) as cur:
