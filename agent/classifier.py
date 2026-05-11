@@ -8,6 +8,7 @@ from agent.tools import CLASSIFY_INTENT_TOOL
 
 class Intent(str, Enum):
     PLAN = "plan"
+    PARSE_RECIPE = "parse_recipe"
     CHAT = "chat"
 
 

@@ -34,3 +34,8 @@ class ShoppingItem(BaseModel):
     ingredient_name: str
     unit: str
     amount: float
+
+
+class PendingAction(BaseModel):
+    type: str
+    data: dict

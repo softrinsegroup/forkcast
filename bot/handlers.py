@@ -2,6 +2,9 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from agent import route
+from agent.workflows import PendingAction
+from models import Recipe
+from storage import RecipeStore
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -12,7 +15,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     user_message = update.message.text
     print("User:", user_message)
 
-    bot_reply = await route(
+    # Handle PendingAction and stop if handled
+    if await _handle_pending_action(update, context, user_message):
+        return
+
+    # Call LLM
+    bot_reply, pending_action = await route(
         user_message,
         context.bot_data["anthropic_client"],
         context.bot_data["recipe_store"],
@@ -21,8 +29,53 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     )
     print("Bot:", bot_reply)
 
-    for chunk in _split_message(bot_reply, limit=4096):
-        await update.message.reply_text(chunk, parse_mode="Markdown")
+    # Handle multi-step actions
+    _store_pending_action(pending_action, context)
+
+    # Send reply
+    await _send_reply(update, bot_reply)
+
+
+def _store_pending_action(
+    action: PendingAction | None, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    # No pending action, do nothing
+    if action is None:
+        return
+
+    # Store pending action in context
+    context.user_data["pending_action"] = action
+
+
+async def _handle_pending_action(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user_message: str
+) -> bool:
+    if "pending_action" in context.user_data:
+        pending_action: PendingAction = context.user_data.pop("pending_action")
+        match pending_action.type:
+            case "confirm_recipe":
+                bot_reply = await _handle_confirm_recipe_message(
+                    user_message, context, pending_action
+                )
+                await _send_reply(update, bot_reply)
+            case _:
+                print(f"Unhandled PendingAction: {pending_action.type}")
+        return True
+
+    return False
+
+
+async def _handle_confirm_recipe_message(
+    user_message: str, context: ContextTypes.DEFAULT_TYPE, pending_action: PendingAction
+) -> str:
+    user_message = user_message.strip().lower()
+    if user_message in ("yes", "y"):
+        recipe_store: RecipeStore = context.bot_data["recipe_store"]
+        recipe: Recipe = pending_action.data["recipe"]
+        await recipe_store.create(recipe)
+        return f"I've saved your {recipe.name} Recipe for future meal plans."
+    else:
+        return "Cancelled saving your recipe."
 
 
 def _split_message(text: str, limit: int = 4096) -> list[str]:
@@ -48,3 +101,11 @@ def _split_message(text: str, limit: int = 4096) -> list[str]:
         chunks.append("\n".join(curr_chunk))
 
     return chunks
+
+
+async def _send_reply(update: Update, bot_reply: str):
+    for chunk in _split_message(bot_reply, limit=4096):
+        try:
+            await update.message.reply_text(chunk, parse_mode="Markdown")
+        except Exception:
+            await update.message.reply_text(chunk)

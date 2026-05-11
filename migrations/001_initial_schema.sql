@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS recipes (
-    id           INTEGER PRIMARY KEY,
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
     name         TEXT    NOT NULL,
     instructions TEXT    NOT NULL,
     servings     INTEGER NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS recipes (
 );
 
 CREATE TABLE IF NOT EXISTS ingredients (
-    id        INTEGER PRIMARY KEY,
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
     recipe_id INTEGER NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
     name      TEXT    NOT NULL,
     unit      TEXT    NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS ingredients (
 );
 
 CREATE TABLE IF NOT EXISTS weekly_plans (
-    id         INTEGER PRIMARY KEY,
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
     timestamp  TEXT NOT NULL,
     recipe_ids TEXT NOT NULL,
     created_at TEXT NOT NULL

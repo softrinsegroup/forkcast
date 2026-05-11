@@ -18,9 +18,8 @@ class IngredientStore:
 
     async def create(self, ingredient: Ingredient, recipe_id: int) -> None:
         await self.db.execute(
-            "INSERT INTO ingredients (id, recipe_id, name, unit, amount) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO ingredients (recipe_id, name, unit, amount) VALUES (?, ?, ?, ?, ?)",
             (
-                ingredient.id,
                 recipe_id,
                 ingredient.name,
                 ingredient.unit,

@@ -29,3 +29,46 @@ CREATE_MEAL_PLAN_TOOL = {
         "required": ["recipe_ids", "notes"],
     },
 }
+
+PARSE_RECIPE_TOOL = {
+    "name": "parse_recipe",
+    "description": "Parse recipe extracted from a URL.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "ingredients": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "amount": {"type": "number"},
+                        "unit": {"type": "string"},
+                    },
+                    "required": ["name", "amount", "unit"],
+                },
+            },
+            "instructions": {
+                "type": "array",
+                "items": {"type": "string"},
+            },
+            "servings": {"type": "integer"},
+            "prep_minutes": {"type": "integer"},
+            "cook_minutes": {"type": "integer"},
+            "tags": {
+                "type": "array",
+                "items": {"type": "string"},
+            },
+        },
+        "required": [
+            "name",
+            "ingredients",
+            "instructions",
+            "servings",
+            "prep_minutes",
+            "cook_minutes",
+            "tags",
+        ],
+    },
+}
