@@ -2,7 +2,7 @@
 
 An AI Agent helping you solve one of the hardest questions out there:
 
-| "What to eat for dinner?"
+> "What to eat for dinner?"
 
 Use a Telegram Bot to interact with the Agent.
 
