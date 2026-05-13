@@ -22,7 +22,7 @@ async def post_init(application: Application) -> None:
     print("Initialized database")
 
     # Init Vector DB
-    chroma_client = chromadb.PersistentClient("./chroma_data")
+    chroma_client = chromadb.PersistentClient("./.chroma_data")
     application.bot_data["recipe_collection"] = chroma_client.get_or_create_collection(
         "recipes"
     )

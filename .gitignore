@@ -107,3 +107,6 @@ $RECYCLE.BIN/
 *.swp
 *.swo
 *~
+
+# ChromaDB
+.chroma_data/
