@@ -11,6 +11,10 @@ dependencies = [
     "python-dotenv>=1.0",
     "yoyo-migrations>=9.0.0",
     "chromadb>=1.5.9",
+    "langchain-anthropic>=1.4.3",
+    "langchain-core>=1.4.0",
+    "langchain-chroma>=1.1.0",
+    "langchain-voyageai>=0.3.3",
 ]
 
 [project.optional-dependencies]

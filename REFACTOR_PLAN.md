@@ -15,7 +15,7 @@ Storage layer (SQLite, stores), Telegram handlers (until Phase 2), domain models
 
 ### 1.1 — Dependencies
 
-- [ ] `uv add langchain-anthropic langchain-core langchain-community langchain-chroma langchain-voyageai`
+- [ ] `uv add langchain-anthropic langchain-core langchain-chroma langchain-voyageai`
 - [ ] `uv add voyageai` (still needed directly for transactional outbox pattern)
 - [ ] Add `VOYAGE_API_KEY` to `.env` and `.env.example`
 
