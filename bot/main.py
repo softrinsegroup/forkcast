@@ -2,21 +2,31 @@ import os
 from anthropic import AsyncAnthropic
 from dotenv import load_dotenv
 from telegram.ext import Application, MessageHandler, filters
+import chromadb
 
 from storage import init_db, close_db, RecipeStore, WeeklyPlanStore, ShoppingItemStore
 from .handlers import handle_message
 
 
 async def post_init(application: Application) -> None:
+    # Init Anthropic client
     application.bot_data["anthropic_client"] = AsyncAnthropic()
     print("Initialized Anthropic client")
 
-    db = await init_db(os.getenv("DATABASE_PATH", "data/meal_prep.db"))
+    # Init DB
+    db = await init_db(os.getenv("DB_PATH", ".data/meal_prep.db"))
     application.bot_data["db"] = db
     application.bot_data["recipe_store"] = RecipeStore(db)
     application.bot_data["weekly_plan_store"] = WeeklyPlanStore(db)
     application.bot_data["shopping_item_store"] = ShoppingItemStore(db)
-    print("Initialized data stores")
+    print("Initialized database")
+
+    # Init Vector DB
+    chroma_client = chromadb.PersistentClient(os.getenv("VECTOR_DB_PATH", ".chroma"))
+    application.bot_data["recipe_collection"] = chroma_client.get_or_create_collection(
+        "recipes"
+    )
+    print("Initialized vector database")
 
     print("Meal Prep Agent is ready for your command 👨‍🍳")
 

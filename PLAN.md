@@ -339,7 +339,7 @@ def plan_confirmation_keyboard() -> InlineKeyboardMarkup:
 
 ```python
 async def post_init(application):
-    conv_store = ConversationStore(os.getenv("DATABASE_PATH", "data/meal_prep.db"))
+    conv_store = ConversationStore(os.getenv("DB_PATH", "data/meal_prep.db"))
     await conv_store.init()
     application.bot_data["recipe_bank"]      = RecipeBank()
     application.bot_data["plan_store"]       = PlanStore()

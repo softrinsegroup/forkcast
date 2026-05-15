@@ -66,4 +66,5 @@ All system prompts use `cache_control: {"type": "ephemeral"}` for prompt caching
 Copy `.env.example` to `.env` and fill in:
 - `ANTHROPIC_API_KEY`
 - `TELEGRAM_BOT_TOKEN`
-- `DATABASE_PATH` (default: `data/meal_prep.db`)
+- `DB_PATH` (default: `.data/meal_prep.db`)
+- `VECTOR_DB_PATH` (default: `.chroma`)

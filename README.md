@@ -32,7 +32,8 @@ Create an `.env` file at root and fill in:
 
 - `ANTHROPIC_API_KEY`
 - `TELEGRAM_BOT_TOKEN`
-- `DATABASE_PATH` (default: `data/meal_prep.db`)
+- `DB_PATH` (default: `.data/meal_prep.db`)
+- `VECTOR_DB_PATH` (default: `.chroma`)
 
 
 ## Architecture
