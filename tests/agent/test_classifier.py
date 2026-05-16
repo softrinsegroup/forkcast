@@ -6,7 +6,6 @@ from agent import classify, Intent, ClassifiedIntent
 
 def make_mock_model(intent: str, confidence: float) -> MagicMock:
     model = MagicMock(spec=BaseChatModel)
-    chain = AsyncMock()
     chain = AsyncMock(
         return_value=ClassifiedIntent(intent=intent, confidence=confidence)
     )
