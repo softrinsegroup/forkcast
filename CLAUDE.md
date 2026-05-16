@@ -1,70 +1,71 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+These rules apply to every task in this project unless explicitly overridden.
+Bias: caution over speed on non-trivial work. Use judgment on trivial tasks.
 
-## Commands
+## Rule 1 — Think Before Coding
 
-```bash
-# Install dependencies
-uv sync
+No silent assumptions. State what you're assuming. Surface tradeoffs. Ask before guessing. Push back when a simpler approach exists.
 
-# Run the bot
-uv run python main.py
+## Rule 2 — Simplicity First
 
-# Run all tests
-uv run pytest
+Minimum code that solves the problem. No speculative features. No abstractions for single-use code. If a senior engineer would call it overcomplicated — simplify.
 
-# Run a single test
-uv run pytest tests/test_foo.py::test_bar
+## Rule 3 — Surgical Changes
 
-# Lint and format
-uv run ruff check .
-uv run ruff format .
-```
+Touch only what you must. Don't "improve" adjacent code, comments, or formatting. Don't refactor what isn't broken. Match existing style.
 
-## Architecture
+## Rule 4 — Goal-Driven Execution
 
-A Telegram bot that uses Claude AI for meal planning. Messages are intent-classified, then routed to a workflow that calls Claude to select recipes or parse new ones.
+Define success criteria. Loop until verified. Don't tell Claude what steps to follow, tell it what success looks like and let it iterate.
 
-```
-Telegram Message
-      ↓
-Intent Classifier (claude-haiku-4-5, forced tool schema)
-      ├→ "plan"       → MealPlanWorkflow (claude-sonnet-4-6)
-      ├→ "add_recipe" → AddRecipeWorkflow (claude-sonnet-4-6)
-      └→ "chat"       → ChatWorkflow (claude-sonnet-4-6 + history)
-```
+## Rule 5 — Use the model only for judgment calls
 
-**Key design choice**: Claude is used only for selection/parsing within each workflow — the code controls all orchestration.
+Use Claude for: classification, drafting, summarization, extraction from unstructured text.
+Do NOT use Claude for: routing, retries, status-code handling, deterministic transforms.
+If a status code already answers the question, plain code answers the question.
 
-## Module Layout
+## Rule 6 — Token budgets are not advisory
 
-- `models/domain.py` — Pydantic models: `Ingredient`, `Recipe`, `WeeklyPlan`, `ShoppingItem`
-- `storage/recipe_bank.py` — JSON-backed recipe store (`data/recipes.json`)
-- `storage/plan_store.py` — Weekly plan storage (`data/meal_plans/<ISO-week>.json`)
-- `storage/db.py` — SQLite conversation history (aiosqlite)
-- `agent/classifier.py` — Intent classification returning `ClassifiedIntent`
-- `agent/tools.py` — Claude tool schemas (`select_meal_plan`, `save_recipe`)
-- `agent/prompts.py` — System prompts (all use `cache_control: ephemeral`)
-- `agent/workflows.py` — `MealPlanWorkflow`, `AddRecipeWorkflow`, `ChatWorkflow`
-- `agent/router.py` — Dispatches to workflow based on intent
-- `bot/handlers.py` — Telegram command and message handlers
-- `bot/main.py` — Bot startup; stores global shared state in separate modules
+Per-task budget: 4,000 tokens.
+Per-session budget: 30,000 tokens.
+If a task is approaching budget, summarize and start fresh. Do not push through.
+Surfacing the breach > silently overrunning.
 
-## Storage
+## Rule 7 — Surface conflicts, don't average them
 
-- Recipes and plans: JSON files with atomic writes (`.tmp` → `os.replace()`), `asyncio.Lock` per store class
-- Conversation history: SQLite via aiosqlite
-- `data/` directory is gitignored and created at runtime
+If two existing patterns in the codebase contradict, don't blend them.
+Pick one (the more recent / more tested), explain why, and flag the other for cleanup.
+"Average" code that satisfies both rules is the worst code.
 
-## Claude API Usage
+## Rule 8 — Read before you write
 
-All system prompts use `cache_control: {"type": "ephemeral"}` for prompt caching. The classifier uses `claude-haiku-4-5`; all workflows use `claude-sonnet-4-6`. Refer to the `claude-api` skill when adding or modifying Claude API calls.
+Before adding code in a file, read the file's exports, the immediate caller, and any obvious shared utilities.
+If you don't understand why existing code is structured the way it is, ask before adding to it.
+"Looks orthogonal to me" is the most dangerous phrase in this codebase.
 
-## Environment
+## Rule 9 — Tests verify intent, not just behavior
 
-Copy `.env.example` to `.env` and fill in:
-- `ANTHROPIC_API_KEY`
-- `TELEGRAM_BOT_TOKEN`
-- `DB_PATH` (default: `.data/meal_prep.db`)
-- `VECTOR_DB_PATH` (default: `.chroma`)
+Every test must encode WHY the behavior matters, not just WHAT it does.
+A test like `expect(getUserName()).toBe('John')` is worthless if the function takes a hardcoded ID.
+If you can't write a test that would fail when business logic changes, the function is wrong.
+
+## Rule 10 — Checkpoint after every significant step
+
+After completing each step in a multi-step task: summarize what was done, what's verified, what's left.
+Don't continue from a state you can't describe back to me.
+If you lose track, stop and restate.
+
+## Rule 11 — Match the codebase's conventions, even if you disagree
+
+If the codebase uses snake_case and you'd prefer camelCase: snake_case.
+Disagreement is a separate conversation. Inside the codebase, conformance > taste.
+If you genuinely think the convention is harmful, surface it. Don't fork it silently.
+
+## Rule 12 — Fail loud
+
+If you can't be sure something worked, say so explicitly.
+"Migration completed" is wrong if 30 records were skipped silently.
+"Tests pass" is wrong if you skipped any.
+"Feature works" is wrong if you didn't verify the edge case I asked about.
+Default to surfacing uncertainty, not hiding it.
