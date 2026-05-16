@@ -10,22 +10,22 @@ from utils import extract_url
 
 async def route(
     message: str,
-    llm_haiku: ChatAnthropic,
-    llm_sonnet: ChatAnthropic,
+    model_classifier: ChatAnthropic,
+    model_primary: ChatAnthropic,
     recipe_store: RecipeStore,
     weekly_plan_store: WeeklyPlanStore,
     shopping_item_store: ShoppingItemStore,
 ) -> str:
-    classified_intent = await classify(message, llm_haiku)
+    classified_intent = await classify(message, model_classifier)
     match classified_intent.intent:
         case Intent.PLAN:
             return await MealPlanWorkflow(
-                llm_sonnet, recipe_store, weekly_plan_store, shopping_item_store
+                model_primary, recipe_store, weekly_plan_store, shopping_item_store
             ).run()
 
         case Intent.PARSE_RECIPE:
             url = extract_url(message)
-            return await ParseRecipeWorkflow(llm_sonnet, url).run()
+            return await ParseRecipeWorkflow(model_primary, url).run()
 
         case Intent.CHAT:
             return await ChatWorkflow().run()

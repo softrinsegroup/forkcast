@@ -10,10 +10,10 @@ from .handlers import handle_message
 
 async def post_init(application: Application) -> None:
     # Init Anthropic client
-    application.bot_data["llm_haiku"] = ChatAnthropic(
+    application.bot_data["model_classifier"] = ChatAnthropic(
         model="claude-haiku-4-5-20251001", max_tokens=64
     )
-    application.bot_data["llm_sonnet"] = ChatAnthropic(model="claude-sonnet-4-6")
+    application.bot_data["model_primary"] = ChatAnthropic(model="claude-sonnet-4-6")
     print("Initialized Anthropic clients")
 
     # Init DB
