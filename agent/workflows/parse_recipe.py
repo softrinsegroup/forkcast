@@ -1,11 +1,27 @@
 from datetime import datetime
 from langchain_core.language_models import BaseChatModel
-from pydantic import ValidationError
+from langchain_core.messages import HumanMessage, SystemMessage
+from pydantic import BaseModel, Field, ValidationError
 
 from agent.prompts import PARSE_RECIPE_PROMPT
-from agent.tools import PARSE_RECIPE_TOOL
 from agent.workflows import Workflow
 from models import Recipe, PendingAction
+from models.domain import Ingredient
+from utils.url import web_fetch
+
+
+class ParseRecipeInput(BaseModel):
+    name: str = Field(description="Recipe name")
+    ingredients: list[Ingredient] = Field(
+        description="List of ingredients needed to make the dish"
+    )
+    instructions: list[str] = Field(
+        description="Step by step instructions to cook the dish"
+    )
+    servings: int = Field(description="Number of servings")
+    prep_minutes: int = Field(description="Number of minutes to prep before cooking")
+    cook_minutes: int = Field(description="Number of minutes to cook the dish")
+    tags: list[str] = Field(description="Hashtags describing the dish")
 
 
 class ParseRecipeWorkflow(Workflow):
@@ -20,52 +36,16 @@ class ParseRecipeWorkflow(Workflow):
         self.recipe: Recipe | None = None
 
     async def _parse_url(self) -> None:
-        # Run loop until both tools are called
-        messages = [
-            {
-                "role": "user",
-                "content": self.url,
-            }
-        ]
-        while True:
-            resp = await self.client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=4096,
-                system=[
-                    {
-                        "type": "text",
-                        "text": PARSE_RECIPE_PROMPT,
-                        "cache_control": {"type": "ephemeral"},
-                    }
-                ],
-                tools=[
-                    {"type": "web_fetch_20260209", "name": "web_fetch"},
-                    PARSE_RECIPE_TOOL,
-                ],
-                tool_choice={"type": "auto"},
-                messages=messages,
-            )
-            if resp.stop_reason == "tool_use":
-                # Claude called tool "parse_recipe"
-                break
-            elif resp.stop_reason == "pause_turn":
-                # Append web_fetch call + result
-                # Send it back to Claude to "parse_recipe"
-                messages.append({"role": "assistant", "content": resp.content})
-            else:
-                raise ValueError(f"Unexpected stop_reason: {resp.stop_reason}")
-
-        # Parse outputs
-        tool_block = next(b for b in resp.content if b.type == "tool_use")
-        tool_input = tool_block.input
-        try:
-            recipe = Recipe.model_validate(
-                {**tool_input, "created_at": datetime.today()}
-            )
-            self.recipe = recipe
-        except ValidationError as e:
-            print(f"Error parsing Recipe: {e.errors()[0]['msg']}")
-            raise
+        sys_msg = SystemMessage(
+            content=PARSE_RECIPE_PROMPT,
+            additional_kwargs={"cache_control": {"type": "ephemeral"}},
+        )
+        page_content = await web_fetch(self.url)
+        human_msg = HumanMessage(content=page_content)
+        res = await self.model.with_structured_output(
+            ParseRecipeInput, method="json_schema"
+        ).ainvoke([sys_msg, human_msg])
+        self.recipe = Recipe(**res.model_dump(), created_at=datetime.today())
 
     def _format_message(self) -> str:
         ingredients = []

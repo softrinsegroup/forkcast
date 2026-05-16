@@ -11,7 +11,7 @@ from storage import transaction, RecipeStore, WeeklyPlanStore, ShoppingItemStore
 import utils.date
 
 
-class MealPlanResponse(BaseModel):
+class MealPlanInput(BaseModel):
     recipe_ids: list[int] = Field(description="List of Recipe IDs for a given week")
     notes: str = Field(description="Rationale and any caveats for choosing the recipes")
 
@@ -47,26 +47,26 @@ class MealPlanWorkflow(Workflow):
         self.prev_recipe_ids = prev_weekly_plan.recipe_ids if prev_weekly_plan else []
 
     async def _get_recommended_recipes(self) -> None:
-        system_message = SystemMessage(
+        sys_msg = SystemMessage(
             content=MEAL_PLAN_PROMPT,
             additional_kwargs={"cache_control": {"type": "ephemeral"}},
         )
         recipe_bank_short = {
             rid: {"name": r.name, "tags": r.tags} for rid, r in self.recipe_bank.items()
         }
-        human_message = HumanMessage(
+        human_msg = HumanMessage(
             content=(
                 f"Recipe bank:\n{json.dumps(recipe_bank_short)}\n\n"
                 f"Previous recipe_ids: {json.dumps(self.prev_recipe_ids)}"
             )
         )
-        response: MealPlanResponse = (
+        response: MealPlanInput = (
             await self.model.bind(max_tokens=512)
-            .with_structured_output(MealPlanResponse)
+            .with_structured_output(MealPlanInput, method="json_schema")
             .ainvoke(
                 [
-                    system_message,
-                    human_message,
+                    sys_msg,
+                    human_msg,
                 ]
             )
         )
