@@ -12,14 +12,13 @@ async def db(tmp_path):
     await close_db(conn)
 
 
-def make_recipe(id: int = 1, name: str = "Pasta") -> Recipe:
+def make_recipe(name: str = "Pasta") -> Recipe:
     return Recipe(
-        id=id,
         name=name,
         instructions=["Boil water", "Cook pasta"],
         ingredients=[
-            Ingredient(id=id * 10 + 1, name="Pasta", unit="g", amount=200),
-            Ingredient(id=id * 10 + 2, name="Salt", unit="tsp", amount=1),
+            Ingredient(name="Pasta", unit="g", amount=200),
+            Ingredient(name="Salt", unit="tsp", amount=1),
         ],
         servings=2,
         prep_minutes=5,
