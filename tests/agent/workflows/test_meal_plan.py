@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 from storage import init_db, close_db, RecipeStore, WeeklyPlanStore, ShoppingItemStore
 from models import Ingredient, Recipe, WeeklyPlan, ShoppingItem
 from agent import MealPlanWorkflow, MealPlanInput
+from tests.factories import make_ingredient
 import utils.date
 
 
