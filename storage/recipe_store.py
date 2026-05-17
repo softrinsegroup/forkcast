@@ -22,7 +22,7 @@ class RecipeStore:
     async def create(self, recipe: Recipe) -> int:
         async with transaction(self.db):
             # Insert Recipe
-            cursor = await self.db.execute(
+            async with self.db.execute(
                 "INSERT INTO recipes (name, instructions, servings, prep_minutes, cook_minutes, tags, created_at) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (
@@ -34,8 +34,8 @@ class RecipeStore:
                     json.dumps(recipe.tags),
                     recipe.created_at.isoformat(),
                 ),
-            )
-            recipe_id = cursor.lastrowid
+            ) as cur:
+                recipe_id = cur.lastrowid
             if recipe_id is None:
                 raise RuntimeError("INSERT into recipes returned no rowid")
 
