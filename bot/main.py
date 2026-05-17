@@ -3,6 +3,7 @@ from langchain_anthropic import ChatAnthropic
 from dotenv import load_dotenv
 from telegram.ext import Application, MessageHandler, filters
 import chromadb
+from langchain_voyageai import VoyageAIEmbeddings
 
 from storage import init_db, close_db, RecipeStore, WeeklyPlanStore, ShoppingItemStore
 from .handlers import handle_message
@@ -30,6 +31,12 @@ async def post_init(application: Application) -> None:
         "recipes"
     )
     print("Initialized vector database")
+
+    # Init Embeddings
+    application.bot_data["embeddings"] = VoyageAIEmbeddings(
+        voyage_api_key=os.getenv("VOYAGE_API_KEY", model="voyage-4")
+    )
+    print("Initialized embeddings")
 
     print("Meal Prep Agent is ready for your command 👨‍🍳")
 
