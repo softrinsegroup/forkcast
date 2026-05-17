@@ -7,7 +7,7 @@ from models.domain import Recipe
 async def embed_recipe(vector_store: VectorStore, recipe: Recipe) -> None:
     doc = _build_recipe_document(recipe)
     ids = await vector_store.aadd_documents([doc])
-    print(f"Embedded {len(ids)} Recipes: {ids}")
+    print(f"Embedded recipe_id {recipe.id} - document_ids {ids}")
 
 
 def _build_recipe_document(recipe: Recipe) -> str:
