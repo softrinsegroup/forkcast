@@ -4,34 +4,15 @@ from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
 
 from storage import init_db, close_db, RecipeStore, WeeklyPlanStore, ShoppingItemStore
-from models import Ingredient, Recipe, WeeklyPlan, ShoppingItem
+from models import Recipe, WeeklyPlan, ShoppingItem
 from agent import MealPlanWorkflow, MealPlanInput
-from tests.factories import make_ingredient
+from tests.factories import make_ingredient, make_recipe
 import utils.date
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-def make_recipe(
-    name: str = "Pasta",
-    tags: list[str] | None = None,
-    ingredients: list[Ingredient] | None = None,
-) -> Recipe:
-    return Recipe(
-        name=name,
-        instructions=["Step 1"],
-        ingredients=ingredients
-        if ingredients is not None
-        else [Ingredient(name="Chicken", unit="g", amount=200.0)],
-        servings=2,
-        prep_minutes=5,
-        cook_minutes=10,
-        tags=tags if tags is not None else ["easy"],
-        created_at=datetime(2026, 4, 20, 12, 0, 0),
-    )
 
 
 def make_mock_model(recipe_ids: list[int], notes: str = "test notes") -> AsyncMock:
