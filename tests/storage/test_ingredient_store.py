@@ -2,6 +2,11 @@ from storage import IngredientStore, RecipeStore
 from tests.factories import make_recipe
 
 
+# ---------------------------------------------------------------------------
+# get
+# ---------------------------------------------------------------------------
+
+
 async def test_ingredient_create_and_get(db):
     recipe_store = RecipeStore(db)
     await recipe_store.create(make_recipe())
@@ -15,6 +20,15 @@ async def test_ingredient_create_and_get(db):
         assert result.amount == ing.amount
 
 
+async def test_ingredient_get_nonexistent_returns_none(db):
+    assert await IngredientStore(db).get(999) is None
+
+
+# ---------------------------------------------------------------------------
+# get_all
+# ---------------------------------------------------------------------------
+
+
 async def test_ingredient_get_all(db):
     recipe_store = RecipeStore(db)
     await recipe_store.create(make_recipe())
@@ -23,6 +37,15 @@ async def test_ingredient_get_all(db):
     ing_store = IngredientStore(db)
     all_ings = await ing_store.get_all()
     assert len(all_ings) == 4
+
+
+async def test_ingredient_get_all_empty(db):
+    assert await IngredientStore(db).get_all() == []
+
+
+# ---------------------------------------------------------------------------
+# update
+# ---------------------------------------------------------------------------
 
 
 async def test_ingredient_update(db):
@@ -40,6 +63,11 @@ async def test_ingredient_update(db):
     assert result.amount == 500
 
 
+# ---------------------------------------------------------------------------
+# delete
+# ---------------------------------------------------------------------------
+
+
 async def test_ingredient_delete(db):
     await RecipeStore(db).create(make_recipe())
     ing_store = IngredientStore(db)
@@ -47,14 +75,6 @@ async def test_ingredient_delete(db):
 
     await ing_store.delete(1)
     assert await ing_store.get(1) is None
-
-
-async def test_ingredient_get_nonexistent_returns_none(db):
-    assert await IngredientStore(db).get(999) is None
-
-
-async def test_ingredient_get_all_empty(db):
-    assert await IngredientStore(db).get_all() == []
 
 
 async def test_ingredient_cascade_delete_via_recipe(db):

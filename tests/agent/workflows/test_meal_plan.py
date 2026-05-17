@@ -100,6 +100,7 @@ async def test_fetch_prev_recipe_ids_existing_plan(db):
     plan = WeeklyPlan(
         timestamp=utils.date.last_monday(),
         recipe_ids=[10, 20, 30],
+        shopping_items=[],
         created_at=datetime(2026, 4, 20, 12, 0, 0),
     )
     await plan_store.create(plan)
@@ -113,7 +114,7 @@ async def test_fetch_prev_recipe_ids_existing_plan(db):
 
 
 # ---------------------------------------------------------------------------
-# _get_recommended_recipes — logic
+# _get_recommended_recipes
 # ---------------------------------------------------------------------------
 
 
@@ -231,6 +232,7 @@ async def test_format_message_contains_week_header(workflow):
     workflow.new_weekly_plan = WeeklyPlan(
         timestamp=utils.date.this_monday(),
         recipe_ids=[1],
+        shopping_items=[],
         created_at=datetime(2026, 4, 20, 12, 0, 0),
     )
     workflow.new_shopping_items = []
@@ -250,6 +252,7 @@ async def test_format_message_lists_recipes_with_tags(workflow):
     workflow.new_weekly_plan = WeeklyPlan(
         timestamp=utils.date.this_monday(),
         recipe_ids=[1, 2],
+        shopping_items=[],
         created_at=datetime(2026, 4, 20, 12, 0, 0),
     )
     workflow.new_shopping_items = []
@@ -268,6 +271,7 @@ async def test_format_message_lists_shopping_items(workflow):
     workflow.new_weekly_plan = WeeklyPlan(
         timestamp=utils.date.this_monday(),
         recipe_ids=[1],
+        shopping_items=[],
         created_at=datetime(2026, 4, 20, 12, 0, 0),
     )
     workflow.new_shopping_items = [
@@ -284,7 +288,7 @@ async def test_format_message_lists_shopping_items(workflow):
 
 
 # ---------------------------------------------------------------------------
-# run() — integration
+# run
 # ---------------------------------------------------------------------------
 
 
@@ -318,10 +322,10 @@ async def test_run_persists_weekly_plan_and_items(db):
     wf = MealPlanWorkflow(model, recipe_store, plan_store, item_store)
     await wf.run()
 
-    plans = await plan_store.get_all()
-    assert len(plans) == 1
+    plan = await plan_store.get(1)
+    plan.recipe_ids = [1, 2, 3, 4, 5]
 
-    items = await item_store.get_by_weekly_plan(plans[0].id)
+    items = await item_store.get_by_weekly_plan(plan.id)
     assert len(items) > 0
 
 

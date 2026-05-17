@@ -21,19 +21,20 @@ class Recipe(BaseModel):
     created_at: datetime
 
 
+class ShoppingItem(BaseModel):
+    id: int | None = None
+    weekly_plan_id: int | None = None
+    ingredient_name: str
+    unit: str
+    amount: float
+
+
 class WeeklyPlan(BaseModel):
     id: int | None = None
     timestamp: date
     recipe_ids: list[int]
+    shopping_items: list[ShoppingItem]
     created_at: datetime
-
-
-class ShoppingItem(BaseModel):
-    id: int | None = None
-    weekly_plan_id: int
-    ingredient_name: str
-    unit: str
-    amount: float
 
 
 class PendingAction(BaseModel):

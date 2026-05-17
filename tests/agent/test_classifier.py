@@ -3,6 +3,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 from agent import classify, Intent, ClassifiedIntent
 
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
 
 def make_mock_model(intent: str, confidence: float) -> MagicMock:
     model = MagicMock(spec=BaseChatModel)
@@ -11,6 +15,11 @@ def make_mock_model(intent: str, confidence: float) -> MagicMock:
     )
     model.with_structured_output.return_value = chain
     return model
+
+
+# ---------------------------------------------------------------------------
+# classify
+# ---------------------------------------------------------------------------
 
 
 async def test_classify_plan_intent():

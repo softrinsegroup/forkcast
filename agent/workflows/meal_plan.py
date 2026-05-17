@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from agent.prompts import MEAL_PLAN_PROMPT
 from agent.workflows import Workflow
 from models import PendingAction, Recipe, ShoppingItem, WeeklyPlan
-from storage import transaction, RecipeStore, WeeklyPlanStore, ShoppingItemStore
+from storage import RecipeStore, WeeklyPlanStore, ShoppingItemStore
 import utils.date
 
 
@@ -85,36 +85,37 @@ class MealPlanWorkflow(Workflow):
         self.llm_notes = resp.notes
 
     async def _persist_weekly_plan(self) -> None:
-        async with transaction(self.weekly_plan_store.db):
-            # Create weekly_plan
-            self.new_weekly_plan = WeeklyPlan(
-                timestamp=utils.date.this_monday(),
-                recipe_ids=self.new_recipe_ids,
-                created_at=utils.date.today(),
-            )
-            weekly_plan_id = await self.weekly_plan_store.create(
-                self.new_weekly_plan, commit=False
-            )
+        # Aggregate ingredients
+        agg_ingredients = defaultdict(float)
+        for recipe_id in self.new_recipe_ids:
+            recipe = self.recipe_bank[recipe_id]
+            for ing in recipe.ingredients:
+                key = (ing.name, ing.unit)
+                agg_ingredients[key] += ing.amount
 
-            # Aggregate ingredients
-            agg_ingredients = defaultdict(float)
-            for recipe_id in self.new_recipe_ids:
-                recipe = self.recipe_bank[recipe_id]
-                for ing in recipe.ingredients:
-                    key = (ing.name, ing.unit)
-                    agg_ingredients[key] += ing.amount
+        # Create shopping_items
+        shopping_items = []
+        for key, amount in agg_ingredients.items():
+            name, unit = key
+            shopping_item = ShoppingItem(
+                ingredient_name=name,
+                unit=unit,
+                amount=amount,
+            )
+            shopping_items.append(shopping_item)
 
-            # Create shopping_items
-            for key, amount in agg_ingredients.items():
-                name, unit = key
-                shopping_item = ShoppingItem(
-                    weekly_plan_id=weekly_plan_id,
-                    ingredient_name=name,
-                    unit=unit,
-                    amount=amount,
-                )
-                self.new_shopping_items.append(shopping_item)
-                await self.shopping_item_store.create(shopping_item, commit=False)
+        # Create weekly_plan
+        weekly_plan = WeeklyPlan(
+            timestamp=utils.date.this_monday(),
+            recipe_ids=self.new_recipe_ids,
+            shopping_items=shopping_items,
+            created_at=utils.date.today(),
+        )
+
+        # Insert WeeklyPlan and ShoppingItems to DB
+        await self.weekly_plan_store.create(weekly_plan)
+        self.new_weekly_plan = weekly_plan
+        self.new_shopping_items = shopping_items
 
     def _format_message(self) -> str:
         recipe_strs = []
