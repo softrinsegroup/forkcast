@@ -60,7 +60,7 @@ class MealPlanWorkflow(Workflow):
                 f"Previous recipe_ids: {json.dumps(self.prev_recipe_ids)}"
             )
         )
-        response: MealPlanInput = (
+        resp: MealPlanInput = (
             await self.model.bind(max_tokens=512)
             .with_structured_output(MealPlanInput, method="json_schema")
             .ainvoke(
@@ -70,19 +70,19 @@ class MealPlanWorkflow(Workflow):
                 ]
             )
         )
-        print("Picked recipe_ids:", response.recipe_ids)
+        print("Picked recipe_ids:", resp.recipe_ids)
 
         # Raise exception if picked a non-existent recipe_id
         missing_recipe_ids = [
             rid
-            for rid in response.recipe_ids
+            for rid in resp.recipe_ids
             if rid is not None and rid not in self.recipe_bank
         ]
         if missing_recipe_ids:
             raise ValueError(f"Could not find recipe_ids: {missing_recipe_ids}")
 
-        self.new_recipe_ids = response.recipe_ids
-        self.llm_notes = response.notes
+        self.new_recipe_ids = resp.recipe_ids
+        self.llm_notes = resp.notes
 
     async def _persist_weekly_plan(self) -> None:
         async with transaction(self.weekly_plan_store.db):

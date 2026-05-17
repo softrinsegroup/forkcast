@@ -42,10 +42,10 @@ class ParseRecipeWorkflow(Workflow):
         )
         page_content = await web_fetch(self.url)
         human_msg = HumanMessage(content=page_content)
-        res = await self.model.with_structured_output(
+        resp = await self.model.with_structured_output(
             ParseRecipeInput, method="json_schema"
         ).ainvoke([sys_msg, human_msg])
-        self.recipe = Recipe(**res.model_dump(), created_at=datetime.today())
+        self.recipe = Recipe(**resp.model_dump(), created_at=datetime.today())
 
     def _format_message(self) -> str:
         ingredients = []
