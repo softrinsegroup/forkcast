@@ -34,12 +34,17 @@ def make_ingredient(
     return Ingredient(name=name, unit=unit, amount=amount)
 
 
-def make_plan(id: int = 1, recipe_ids: list[int] | None = None) -> WeeklyPlan:
+def make_weekly_plan(
+    timestamp: date = date(2026, 4, 20),
+    recipe_ids: list[int] = [1, 2, 3],
+    shopping_items: list[ShoppingItem] = [],
+    created_at: datetime = datetime.today(),
+) -> WeeklyPlan:
     return WeeklyPlan(
-        id=id,
-        timestamp=date(2026, 4, 20),
-        recipe_ids=recipe_ids if recipe_ids is not None else [1, 2, 3],
-        created_at=datetime(2026, 4, 20, 12, 0, 0),
+        timestamp=timestamp,
+        recipe_ids=recipe_ids,
+        shopping_items=shopping_items,
+        created_at=created_at,
     )
 
 

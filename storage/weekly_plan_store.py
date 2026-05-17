@@ -59,7 +59,7 @@ class WeeklyPlanStore:
             row = await cur.fetchone()
         if row is None:
             return None
-        return self._parse_weekly_plan(row)
+        return await self._parse_weekly_plan(row)
 
     async def get_last_weekly_plan_recipe_ids(self) -> WeeklyPlan | None:
         last_monday = utils.date.last_monday()
@@ -71,7 +71,7 @@ class WeeklyPlanStore:
             row = await cur.fetchone()
         if row is None:
             return None
-        return self._parse_weekly_plan(row)
+        return await self._parse_weekly_plan(row)
 
     async def update(self, plan: WeeklyPlan) -> None:
         await self.db.execute(
