@@ -1,13 +1,12 @@
-from models import Ingredient
 from storage import IngredientStore, RecipeStore
-from conftest import make_recipe
+from tests.factories import make_recipe, make_ingredient
 
 
 async def test_recipe_create_and_get(db):
     store = RecipeStore(db)
     recipe = make_recipe()
-    await store.create(recipe)
-    result = await store.get(1)
+    recipe_id = await store.create(recipe)
+    result = await store.get(recipe_id)
     assert result.name == "Pasta"
     assert len(result.ingredients) == 2
     assert result.ingredients[0].name == "Pasta"
@@ -15,8 +14,8 @@ async def test_recipe_create_and_get(db):
 
 async def test_recipe_get_all(db):
     store = RecipeStore(db)
-    await store.create(make_recipe(1, "Pasta"))
-    await store.create(make_recipe(2, "Salad"))
+    await store.create(make_recipe(name="Pasta"))
+    await store.create(make_recipe(name="Salad"))
     results = await store.get_all()
     assert len(results) == 2
     names = {r.name for r in results}
@@ -25,15 +24,22 @@ async def test_recipe_get_all(db):
 
 async def test_recipe_update(db):
     store = RecipeStore(db)
-    await store.create(make_recipe())
-    updated = make_recipe()
-    updated.name = "Pasta Updated"
-    updated.ingredients = [Ingredient(id=99, name="Spaghetti", unit="g", amount=300)]
-    await store.update(updated)
-    result = await store.get(1)
-    assert result.name == "Pasta Updated"
-    assert len(result.ingredients) == 1
-    assert result.ingredients[0].name == "Spaghetti"
+    recipe_id = await store.create(make_recipe())
+    recipe = await store.get(recipe_id)
+    assert recipe.name == "Pasta"
+    assert recipe.ingredients[0].name == "Pasta"
+    assert recipe.ingredients[0].unit == "g"
+    assert recipe.ingredients[0].amount == 200.0
+
+    recipe.name = "Spaghetti"
+    recipe.ingredients = [make_ingredient(name="Spaghetti", unit="g", amount=300)]
+    await store.update(recipe)
+    updated = await store.get(recipe_id)
+    assert updated.name == "Spaghetti"
+    assert len(updated.ingredients) == 1
+    assert updated.ingredients[0].name == "Spaghetti"
+    assert updated.ingredients[0].unit == "g"
+    assert updated.ingredients[0].amount == 300.0
 
 
 async def test_recipe_delete_cascades_ingredients(db):
@@ -57,18 +63,21 @@ async def test_recipe_get_all_empty(db):
 async def test_recipe_create_no_ingredients(db):
     recipe = make_recipe()
     recipe.ingredients = []
-    await RecipeStore(db).create(recipe)
-    result = await RecipeStore(db).get(1)
+    store = RecipeStore(db)
+    recipe_id = await store.create(recipe)
+    result = await store.get(recipe_id)
     assert result.ingredients == []
 
 
 async def test_recipe_update_clears_ingredients(db):
     store = RecipeStore(db)
-    await store.create(make_recipe())
-    updated = make_recipe()
-    updated.ingredients = []
-    await store.update(updated)
-    result = await store.get(1)
+    recipe_id = await store.create(make_recipe())
+    recipe = await store.get(recipe_id)
+    assert len(recipe.ingredients) > 0
+
+    recipe.ingredients = []
+    await store.update(recipe)
+    result = await store.get(recipe_id)
     assert result.ingredients == []
 
 

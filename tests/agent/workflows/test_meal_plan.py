@@ -14,12 +14,6 @@ import utils.date
 # ---------------------------------------------------------------------------
 
 
-def make_ingredient(
-    name: str = "Chicken", unit: str = "g", amount: float = 200.0
-) -> Ingredient:
-    return Ingredient(name=name, unit=unit, amount=amount)
-
-
 def make_recipe(
     name: str = "Pasta",
     tags: list[str] | None = None,

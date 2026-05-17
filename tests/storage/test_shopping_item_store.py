@@ -1,5 +1,5 @@
 from storage import WeeklyPlanStore, ShoppingItemStore
-from conftest import make_plan, make_item
+from tests.factories import make_plan, make_item
 
 
 async def test_shopping_item_create_and_get(db):

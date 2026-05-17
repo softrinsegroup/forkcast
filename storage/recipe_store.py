@@ -18,7 +18,7 @@ class RecipeStore:
     def __init__(self, db: aiosqlite.Connection):
         self.db = db
 
-    async def create(self, recipe: Recipe) -> None:
+    async def create(self, recipe: Recipe) -> int:
         async with self.db.execute("BEGIN"):
             pass
         cursor = await self.db.execute(
@@ -47,6 +47,8 @@ class RecipeStore:
             )
         await self.db.commit()
         print(f"Recipe created: {recipe.name}")
+
+        return recipe_id
 
     async def get(self, id: int) -> Recipe | None:
         async with self.db.execute("SELECT * FROM recipes WHERE id = ?", (id,)) as cur:

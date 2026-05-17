@@ -1,5 +1,5 @@
 from storage import IngredientStore, RecipeStore
-from conftest import make_recipe
+from tests.factories import make_recipe
 
 
 async def test_ingredient_create_and_get(db):
