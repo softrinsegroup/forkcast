@@ -10,7 +10,7 @@ async def embed_recipe(vector_store: VectorStore, recipe: Recipe) -> None:
     print(f"Embedded recipe_id {recipe.id} - document_ids {ids}")
 
 
-def _build_recipe_document(recipe: Recipe) -> str:
+def _build_recipe_document(recipe: Recipe) -> Document:
     lines = [recipe.name]
     lines.append(f"Tags: {', '.join(recipe.tags)}")
     lines.append(f"Ingredients: {', '.join(i.name for i in recipe.ingredients)}")

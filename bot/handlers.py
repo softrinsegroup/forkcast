@@ -4,7 +4,7 @@ from telegram.ext import ContextTypes
 from agent import route
 from agent.workflows import PendingAction
 from models import Recipe
-from storage import RecipeStore
+from storage import RecipeStore, embed_recipe
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -71,9 +71,20 @@ async def _handle_confirm_recipe_message(
 ) -> str:
     user_message = user_message.strip().lower()
     if user_message in ("yes", "y"):
+        # Save Recipe to DB
         recipe_store: RecipeStore = context.bot_data["recipe_store"]
-        recipe: Recipe = pending_action.data["recipe"]
-        await recipe_store.create(recipe)
+        # Missing id because it hasn't be inserted to the DB
+        pending_recipe: Recipe = pending_action.data["recipe"]
+        recipe_id = await recipe_store.create(pending_recipe)
+
+        # Embed Recipe
+        vector_store = context.bot_data["vector_store"]
+        recipe = await recipe_store.get(recipe_id)
+        try:
+            await embed_recipe(vector_store, recipe)
+        except Exception as e:
+            print(f"Warning: embedding failed for recipe_id={recipe_id}: {e}")
+
         return f"I've saved your {recipe.name} Recipe for future meal plans."
     else:
         return "Cancelled saving your recipe."
