@@ -27,6 +27,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         context.bot_data["recipe_store"],
         context.bot_data["weekly_plan_store"],
         context.bot_data["shopping_item_store"],
+        context.bot_data["vector_store"],
     )
     print("Bot:", bot_reply)
 

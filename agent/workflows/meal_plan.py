@@ -2,6 +2,7 @@ from collections import defaultdict
 import json
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.vectorstores import VectorStore
 from pydantic import BaseModel, Field
 
 from agent.workflows import Workflow
@@ -41,11 +42,13 @@ class MealPlanWorkflow(Workflow):
         recipe_store: RecipeStore,
         weekly_plan_store: WeeklyPlanStore,
         shopping_item_store: ShoppingItemStore,
+        vector_store: VectorStore,
     ):
         self.model = model
         self.recipe_store = recipe_store
         self.weekly_plan_store = weekly_plan_store
         self.shopping_item_store = shopping_item_store
+        self.vector_store = vector_store
 
         self.recipe_bank: dict[int, Recipe] = {}
         self.prev_recipe_ids: list[int] = []
@@ -65,6 +68,12 @@ class MealPlanWorkflow(Workflow):
         self.prev_recipe_ids = prev_weekly_plan.recipe_ids if prev_weekly_plan else []
 
     async def _get_recommended_recipes(self) -> None:
+        docs = await self.vector_store.asimilarity_search(
+            "varied weekday dinners", k=10
+        )
+        candidate_ids = {int(d.metadata["recipe_id"]) for d in docs}
+        # TODO: fetch from DB
+
         sys_msg = SystemMessage(
             content=MEAL_PLAN_PROMPT,
             additional_kwargs={"cache_control": {"type": "ephemeral"}},

@@ -1,4 +1,5 @@
 from langchain_anthropic import ChatAnthropic
+from langchain_core.vectorstores import VectorStore
 
 from agent.classifier import Intent, classify
 from agent.workflows.chat import ChatWorkflow
@@ -15,12 +16,17 @@ async def route(
     recipe_store: RecipeStore,
     weekly_plan_store: WeeklyPlanStore,
     shopping_item_store: ShoppingItemStore,
+    vector_store: VectorStore,
 ) -> str:
     classified_intent = await classify(message, model_classifier)
     match classified_intent.intent:
         case Intent.PLAN:
             return await MealPlanWorkflow(
-                model_agent, recipe_store, weekly_plan_store, shopping_item_store
+                model_agent,
+                recipe_store,
+                weekly_plan_store,
+                shopping_item_store,
+                vector_store,
             ).run()
 
         case Intent.PARSE_RECIPE:
