@@ -15,9 +15,9 @@ Storage layer (SQLite, stores), Telegram handlers (until Phase 2), domain models
 
 ### 1.1 — Dependencies
 
-- [ ] `uv add langchain-anthropic langchain-core langchain-chroma langchain-voyageai`
-- [ ] `uv add voyageai` (still needed directly for transactional outbox pattern)
-- [ ] Add `VOYAGE_API_KEY` to `.env` and `.env.example`
+- [x] `uv add langchain-anthropic langchain-core langchain-chroma langchain-voyageai`
+- [x] `uv add voyageai` (still needed directly for transactional outbox pattern)
+- [x] Add `VOYAGE_API_KEY` to `.env` and `.env.example`
 
 ---
 
@@ -25,12 +25,12 @@ Storage layer (SQLite, stores), Telegram handlers (until Phase 2), domain models
 
 This is the transactional outbox pattern for dual-write consistency between SQLite and ChromaDB.
 
-- [ ] **`migrations/002_add_embedded_flag.sql`** (new file)
+- [x] **`migrations/002_add_embedded_flag.sql`** (new file)
   ```sql
   ALTER TABLE recipes ADD COLUMN embedded BOOLEAN NOT NULL DEFAULT FALSE;
   ```
 
-- [ ] **`storage/recipe_store.py`** — three changes:
+- [x] **`storage/recipe_store.py`** — three changes:
   - Fix `create()`: replace broken `async with self.db.execute("BEGIN")` no-op with `async with transaction(self.db)`, return `recipe_id: int`
   - Add `get_unembedded() -> list[Recipe]`: `SELECT * FROM recipes WHERE embedded = FALSE`
   - Add `mark_embedded(recipe_id: int) -> None`: `UPDATE recipes SET embedded = TRUE WHERE id = ?`
