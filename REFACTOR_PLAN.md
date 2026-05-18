@@ -138,7 +138,7 @@ Replace `_get_recommended_recipes()` raw API call and `_fetch_recipe_bank()` wit
 
 Replace raw loop with LCEL chain. This workflow uses Anthropic's built-in `web_fetch` server-side tool and the `pause_turn` stop reason.
 
-- [ ] Replace `_parse_url()` raw loop with:
+- [x] Replace `_parse_url()` raw loop with:
   ```python
   llm = ChatAnthropic(model="claude-sonnet-4-6")
   chain = parse_recipe_prompt | llm.bind_tools(
@@ -146,8 +146,8 @@ Replace raw loop with LCEL chain. This workflow uses Anthropic's built-in `web_f
   )
   response = await chain.ainvoke({"url": self.url})
   ```
-- [ ] `langchain-anthropic` handles `pause_turn` transparently in recent versions (it loops internally). Verify this behavior holds — if not, keep the manual loop and wrap only the LLM construction.
-- [ ] Parse structured output from `response.tool_calls[0]["args"]` and validate into `Recipe` with `Recipe.model_validate({...})`
+- [x] `langchain-anthropic` handles `pause_turn` transparently in recent versions (it loops internally). Verify this behavior holds — if not, keep the manual loop and wrap only the LLM construction.
+- [x] Parse structured output from `response.tool_calls[0]["args"]` and validate into `Recipe` with `Recipe.model_validate({...})`
 
 ---
 
@@ -163,17 +163,17 @@ Currently returns a hardcoded string with no LLM call. Add a real chat response.
 
 ### 1.9 — Router: `agent/router.py`
 
-- [ ] Remove `client: AsyncAnthropic` param (no longer passed to `classify()`)
-- [ ] Instantiate `ChatAnthropic` instances inside each workflow constructor, not in `route()`
-- [ ] Add `vector_store: VectorStore` param, forward to `MealPlanWorkflow`
-- [ ] Update `bot/handlers.py` `handle_message()` call site accordingly
+- [x] Remove `client: AsyncAnthropic` param (no longer passed to `classify()`)
+- [x] Instantiate `ChatAnthropic` instances inside each workflow constructor, not in `route()`
+- [x] Add `vector_store: VectorStore` param, forward to `MealPlanWorkflow`
+- [x] Update `bot/handlers.py` `handle_message()` call site accordingly
 
 ---
 
 ### 1.10 — Phase 1 Verification
 
-- [ ] `uv run ruff check . && uv run ruff format .`
-- [ ] `uv run pytest`
+- [x] `uv run ruff check . && uv run ruff format .`
+- [x] `uv run pytest`
 - [ ] Manual: send "plan my meals" → verify meal plan returns with vector-retrieved recipes
 - [ ] Manual: send a recipe URL → verify parsed recipe confirmation flow still works
 - [ ] Manual: save recipe → `SELECT embedded FROM recipes ORDER BY id DESC LIMIT 1;` → should be `1`

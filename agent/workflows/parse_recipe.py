@@ -58,7 +58,9 @@ class ParseRecipeWorkflow(Workflow):
         resp = await self.model.with_structured_output(
             ParseRecipeInput, method="json_schema"
         ).ainvoke([sys_msg, human_msg])
-        self.recipe = Recipe(**resp.model_dump(), created_at=datetime.today(), embedded=False)
+        self.recipe = Recipe(
+            **resp.model_dump(), created_at=datetime.today(), embedded=False
+        )
 
     def _format_message(self) -> str:
         ingredients = []
