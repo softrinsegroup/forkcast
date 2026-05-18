@@ -84,6 +84,7 @@ async def _handle_confirm_recipe_message(
         vector_store = context.bot_data["vector_store"]
         try:
             await embed_recipe(vector_store, recipe)
+            await recipe_store.update_embedded([recipe_id])
         except Exception as e:
             print(f"Warning: embedding failed for recipe_id={recipe_id}: {e}")
 
