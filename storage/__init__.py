@@ -3,4 +3,4 @@ from .recipe_store import RecipeStore, IRecipeStore
 from .ingredient_store import IngredientStore, IIngredientStore
 from .weekly_plan_store import WeeklyPlanStore, IWeeklyPlanStore
 from .shopping_item_store import ShoppingItemStore, IShoppingItemStore
-from .vector_store import embed_recipe
+from .vector_store import reconcile_recipes, embed_recipe

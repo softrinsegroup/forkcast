@@ -1,7 +1,6 @@
 import os
 from langchain_anthropic import ChatAnthropic
 from dotenv import load_dotenv
-from langchain_core.vectorstores import VectorStore
 from telegram.ext import Application, MessageHandler, filters
 from langchain_chroma import Chroma
 from langchain_voyageai import VoyageAIEmbeddings
@@ -10,7 +9,7 @@ import chromadb
 from storage import (
     init_db,
     close_db,
-    embed_recipe,
+    reconcile_recipes,
     RecipeStore,
     WeeklyPlanStore,
     ShoppingItemStore,
@@ -62,25 +61,6 @@ async def post_init(application: Application) -> None:
 async def post_shutdown(application: Application) -> None:
     db = application.bot_data["db"]
     await close_db(db)
-
-
-async def reconcile_recipes(recipe_store: RecipeStore, vector_store: VectorStore):
-    # Fetch all unembedded Recipes
-    recipes = await recipe_store.get_all_unembedded()
-    print(f"Reconciling {len(recipes)} unembedded Recipe(s)...")
-
-    # Embed each unembedded Recipe and track ids
-    embedded_ids = []
-    for recipe in recipes:
-        try:
-            await embed_recipe(vector_store, recipe)
-            embedded_ids.append(recipe.id)
-        except Exception as e:
-            print(f"Warning: failed to embed recipe_id={recipe.id}: {e}")
-
-    # Update DB flags
-    if embedded_ids:
-        await recipe_store.update_embedded(embedded_ids)
 
 
 def run() -> None:
