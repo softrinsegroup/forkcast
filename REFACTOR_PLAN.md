@@ -36,7 +36,7 @@ This is the transactional outbox pattern for dual-write consistency between SQLi
   - Add `mark_embedded(recipe_id: int) -> None`: `UPDATE recipes SET embedded = TRUE WHERE id = ?`
   - Update `IRecipeStore` Protocol: new methods + `create` return type `-> int`
 
-- [ ] **`storage/vector_store.py`** (new file) — `VectorStore` class using LangChain abstractions:
+- [x] **`storage/vector_store.py`** (new file) — `VectorStore` class using LangChain abstractions:
   - Constructor: `(chroma_store: LangchainChroma, recipe_store: RecipeStore)`
   - `_build_document(recipe) -> str`: `"Recipe: {name}\nTags: ...\nIngredients: ...\nInstructions: ..."`
   - `embed_recipe(recipe_id, recipe) -> None`: add to Chroma, call `mark_embedded()`
@@ -45,9 +45,9 @@ This is the transactional outbox pattern for dual-write consistency between SQLi
   - Use `langchain_chroma.Chroma` + `langchain_voyageai.VoyageAIEmbeddings(model="voyage-3")`
   - All Chroma calls are sync — wrap with `asyncio.to_thread()`
 
-- [ ] **`storage/__init__.py`** — add `from .vector_store import VectorStore`
+- [x] **`storage/__init__.py`** — add `from .vector_store import VectorStore`
 
-- [ ] **`bot/main.py`** — init `VectorStore` in `post_init`, call `reconcile()` at startup:
+- [x] **`bot/main.py`** — init `VectorStore` in `post_init`, call `reconcile()` at startup:
   ```python
   embeddings = VoyageAIEmbeddings(model="voyage-3", voyage_api_key=os.getenv("VOYAGE_API_KEY"))
   chroma_store = await asyncio.to_thread(
@@ -59,7 +59,7 @@ This is the transactional outbox pattern for dual-write consistency between SQLi
   await vector_store.reconcile()
   ```
 
-- [ ] **`bot/handlers.py`** — after `recipe_store.create(recipe)`, call `vector_store.embed_recipe()`:
+- [x] **`bot/handlers.py`** — after `recipe_store.create(recipe)`, call `vector_store.embed_recipe()`:
   ```python
   recipe_id = await recipe_store.create(recipe)
   try:
@@ -75,11 +75,11 @@ This is the transactional outbox pattern for dual-write consistency between SQLi
 
 Replace the three hand-rolled JSON dicts with Pydantic models used by LangChain.
 
-- [ ] **`CLASSIFY_INTENT_TOOL`** → `ClassifiedIntent(BaseModel)` with `intent: Literal["plan", "parse_recipe", "chat"]` and `confidence: float`. Used with `.with_structured_output()` — no `@tool` needed.
+- [x] **`CLASSIFY_INTENT_TOOL`** → `ClassifiedIntent(BaseModel)` with `intent: Literal["plan", "parse_recipe", "chat"]` and `confidence: float`. Used with `.with_structured_output()` — no `@tool` needed.
 
-- [ ] **`CREATE_MEAL_PLAN_TOOL`** → `@tool`-decorated function or Pydantic `MealPlanInput(BaseModel)` with `recipe_ids: list[int]` and `notes: str`. Used with `.bind_tools([...], tool_choice="create_meal_plan")`.
+- [x] **`CREATE_MEAL_PLAN_TOOL`** → `@tool`-decorated function or Pydantic `MealPlanInput(BaseModel)` with `recipe_ids: list[int]` and `notes: str`. Used with `.bind_tools([...], tool_choice="create_meal_plan")`.
 
-- [ ] **`PARSE_RECIPE_TOOL`** → `@tool`-decorated function or Pydantic `ParseRecipeInput(BaseModel)` matching the current schema fields. Used the same way.
+- [x] **`PARSE_RECIPE_TOOL`** → `@tool`-decorated function or Pydantic `ParseRecipeInput(BaseModel)` matching the current schema fields. Used the same way.
 
 ---
 
@@ -87,10 +87,10 @@ Replace the three hand-rolled JSON dicts with Pydantic models used by LangChain.
 
 Replace raw strings with LangChain prompt objects. Content stays the same.
 
-- [ ] `CLASSIFY_INTENT_PROMPT` → `SystemMessage(content=...)`
-- [ ] `MEAL_PLAN_PROMPT` → `ChatPromptTemplate.from_messages([("system", ...), ("human", "{input}")])`
-- [ ] `PARSE_RECIPE_PROMPT` → `ChatPromptTemplate.from_messages([("system", ...), ("human", "{url}")])`
-- [ ] `CHAT_PROMPT` → `SystemMessage(content=...)`
+- [x] `CLASSIFY_INTENT_PROMPT` → `SystemMessage(content=...)`
+- [x] `MEAL_PLAN_PROMPT` → `ChatPromptTemplate.from_messages([("system", ...), ("human", "{input}")])`
+- [x] `PARSE_RECIPE_PROMPT` → `ChatPromptTemplate.from_messages([("system", ...), ("human", "{url}")])`
+- [x] `CHAT_PROMPT` → `SystemMessage(content=...)`
 
 > **Note on prompt caching:** The current code sets `cache_control: {"type": "ephemeral"}` manually. In `langchain-anthropic`, pass this via `extra_headers` on `ChatAnthropic` or use `SystemMessage` with `additional_kwargs={"cache_control": {"type": "ephemeral"}}`.
 
@@ -100,14 +100,14 @@ Replace raw strings with LangChain prompt objects. Content stays the same.
 
 Replace manual `client.messages.create()` + tool_use parsing with an LCEL chain.
 
-- [ ] Rewrite `classify()` as an LCEL chain:
+- [x] Rewrite `classify()` as an LCEL chain:
   ```python
   llm = ChatAnthropic(model="claude-haiku-4-5-20251001")
   chain = classify_prompt | llm.with_structured_output(ClassifiedIntent)
   result: ClassifiedIntent = await chain.ainvoke({"message": message})
   ```
-- [ ] Remove the `client: AsyncAnthropic` parameter — `ChatAnthropic` self-initializes from `ANTHROPIC_API_KEY`
-- [ ] Update `agent/router.py` call site to remove `client` arg from `classify()`
+- [x] Remove the `client: AsyncAnthropic` parameter — `ChatAnthropic` self-initializes from `ANTHROPIC_API_KEY`
+- [x] Update `agent/router.py` call site to remove `client` arg from `classify()`
 
 ---
 
