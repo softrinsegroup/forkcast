@@ -12,21 +12,19 @@ import utils.date
 
 
 MEAL_PLAN_PROMPT = """
-You are a Meal Planning Assistant. Your only job is to call the `create_meal_plan` tool — never respond with plain text.
+You are a Meal Planning Assistant. Select 5 recipes for the week.
 
 You will receive:
-- A recipe bank as JSON: {id: {name, ingredients, tags}}
+- A recipe bank as JSON: {id: {name, tags}}
 - A list of previously selected recipe_ids from last week
 
 Selection rules:
-1. Do not pick `recipe_id` that do not exist. If there are no recipes, return an empty list.
-2. Always select exactly 5 recipes for Mon - Fri.
-3. Avoid IDs in `previous_ids` where possible — variety across weeks matters.
+1. Only pick recipe_ids that exist in the recipe bank. If there are no recipes, return an empty list.
+2. Select exactly 5 recipes for Mon - Fri.
+3. Avoid IDs in previous_ids where possible — variety across weeks matters.
 4. Vary the type of meal across the 5 selections.
 5. If the bank has fewer than 5 recipes, repeat the least-recently-used ones to reach 5.
-6. Use the `notes` field to briefly explain your selections and any caveats (e.g. why you repeated a recipe).
-
-Call `create_meal_plan` now.
+6. In the notes field, briefly explain your selections and any caveats (e.g. why you repeated a recipe).
 """
 
 
@@ -57,30 +55,34 @@ class MealPlanWorkflow(Workflow):
         self.new_weekly_plan: WeeklyPlan | None = None
         self.new_shopping_items: list[ShoppingItem] = []
 
-    async def _fetch_recipe_bank(self) -> None:
-        recipe_bank_list = await self.recipe_store.get_all()
-        self.recipe_bank = {r.id: r for r in recipe_bank_list}
-
-    async def _fetch_prev_recipe_ids(self) -> None:
+    async def _build_recipe_bank(self) -> None:
         prev_weekly_plan = (
             await self.weekly_plan_store.get_last_weekly_plan_recipe_ids()
         )
         self.prev_recipe_ids = prev_weekly_plan.recipe_ids if prev_weekly_plan else []
 
-    async def _get_recommended_recipes(self) -> None:
+    async def _fetch_recipe_bank(self) -> None:
+        # TODO: inject prompt from user
+        # Fetch short list of recipes from vector store
         docs = await self.vector_store.asimilarity_search(
             "varied weekday dinners", k=10
         )
         candidate_ids = {int(d.metadata["recipe_id"]) for d in docs}
-        # TODO: fetch from DB
+
+        all_ids = list(candidate_ids | set(self.prev_recipe_ids))
+
+        recipes = await self.recipe_store.get_by_ids(all_ids)
+        self.recipe_bank = {r.id: r for r in recipes}
+
+    async def _get_recommended_recipes(self) -> None:
+        recipe_bank_short = {
+            rid: {"name": r.name, "tags": r.tags} for rid, r in self.recipe_bank.items()
+        }
 
         sys_msg = SystemMessage(
             content=MEAL_PLAN_PROMPT,
             additional_kwargs={"cache_control": {"type": "ephemeral"}},
         )
-        recipe_bank_short = {
-            rid: {"name": r.name, "tags": r.tags} for rid, r in self.recipe_bank.items()
-        }
         human_msg = HumanMessage(
             content=(
                 f"Recipe bank:\n{json.dumps(recipe_bank_short)}\n\n"
@@ -166,8 +168,8 @@ class MealPlanWorkflow(Workflow):
         )
 
     async def run(self) -> tuple[str, PendingAction | None]:
+        await self._build_recipe_bank()
         await self._fetch_recipe_bank()
-        await self._fetch_prev_recipe_ids()
         await self._get_recommended_recipes()
         await self._persist_weekly_plan()
         return self._format_message(), None
