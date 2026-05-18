@@ -174,7 +174,7 @@ Currently returns a hardcoded string with no LLM call. Add a real chat response.
 
 - [x] `uv run ruff check . && uv run ruff format .`
 - [x] `uv run pytest`
-- [ ] Manual: send "plan my meals" → verify meal plan returns with vector-retrieved recipes
+- [x] Manual: send "plan my meals" → verify meal plan returns with vector-retrieved recipes
 - [ ] Manual: send a recipe URL → verify parsed recipe confirmation flow still works
 - [ ] Manual: save recipe → `SELECT embedded FROM recipes ORDER BY id DESC LIMIT 1;` → should be `1`
 - [ ] Manual: restart bot with an unembedded recipe → console logs `"reconciling 1 unembedded recipe(s)..."`

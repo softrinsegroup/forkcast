@@ -1,4 +1,5 @@
 from datetime import datetime
+import httpx
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field, ValidationError
@@ -90,11 +91,17 @@ class ParseRecipeWorkflow(Workflow):
         try:
             await self._parse_url()
         except ValidationError as e:
-            print(f"Parse recipe ValidationError: {e}")
+            print(f"[ParseRecipeWorkflow] ValidationError: {e}")
             return f"Couldn't parse recipe from {self.url}: {e}", None
         except ValueError as e:
-            print(f"Parse recipe ValueError: {e}")
+            print(f"[ParseRecipeWorkflow] ValueError: {e}")
             return f"Error with LLM call: {e}", None
+        except httpx.ConnectError as e:
+            print(f"[ParseRecipeWorkflow] httpx.ConnectError: {e}")
+            return f"Error fetching recipe: {e}", None
+        except Exception as e:
+            print(f"[ParseRecipeWorkflow] Exception: {e}")
+            return f"Unexpected error: {e}", None
 
         return self._format_message(), PendingAction(
             type="confirm_recipe", data={"recipe": self.recipe}
