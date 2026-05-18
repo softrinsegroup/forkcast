@@ -115,22 +115,22 @@ Replace manual `client.messages.create()` + tool_use parsing with an LCEL chain.
 
 Replace `_get_recommended_recipes()` raw API call and `_fetch_recipe_bank()` with LangChain chain + vector search.
 
-- [ ] `_fetch_recipe_bank()` — replace `recipe_store.get_all()` with `vector_store.query()`:
+- [x] `_fetch_recipe_bank()` — replace `recipe_store.get_all()` with `vector_store.query()`:
   ```python
   recipe_ids = await self.vector_store.query("weekly meal plan variety healthy balanced", n_results=20)
   recipes = [await self.recipe_store.get(rid) for rid in recipe_ids] if recipe_ids else await self.recipe_store.get_all()
   self.recipe_bank = {r.id: r for r in recipes if r is not None}
   ```
-- [ ] `_get_recommended_recipes()` — replace raw `client.messages.create()` with LCEL chain:
+- [x] `_get_recommended_recipes()` — replace raw `client.messages.create()` with LCEL chain:
   ```python
   llm = ChatAnthropic(model="claude-sonnet-4-6")
   chain = meal_plan_prompt | llm.bind_tools([create_meal_plan_tool], tool_choice="create_meal_plan")
   response = await chain.ainvoke({"input": message})
   # Parse tool call from response.tool_calls[0]
   ```
-- [ ] Add `vector_store: VectorStore` constructor param
-- [ ] Update `agent/router.py` to pass `vector_store` to `MealPlanWorkflow(...)`
-- [ ] Update `bot/handlers.py` `handle_message()` to pass `context.bot_data["vector_store"]` to `route()`
+- [x] Add `vector_store: VectorStore` constructor param
+- [x] Update `agent/router.py` to pass `vector_store` to `MealPlanWorkflow(...)`
+- [x] Update `bot/handlers.py` `handle_message()` to pass `context.bot_data["vector_store"]` to `route()`
 
 ---
 
