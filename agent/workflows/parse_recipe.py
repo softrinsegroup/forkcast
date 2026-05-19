@@ -1,4 +1,5 @@
 from datetime import datetime
+import httpx
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field, ValidationError
@@ -58,7 +59,9 @@ class ParseRecipeWorkflow(Workflow):
         resp = await self.model.with_structured_output(
             ParseRecipeInput, method="json_schema"
         ).ainvoke([sys_msg, human_msg])
-        self.recipe = Recipe(**resp.model_dump(), created_at=datetime.today(), embedded=False)
+        self.recipe = Recipe(
+            **resp.model_dump(), created_at=datetime.today(), embedded=False
+        )
 
     def _format_message(self) -> str:
         ingredients = []
@@ -72,7 +75,8 @@ class ParseRecipeWorkflow(Workflow):
         instructions_concat = "\n".join(instructions)
 
         return (
-            f"I've parsed your recipe. If it looks correct, reply with 'yes' or 'no'.\n\n"
+            f"I've parsed your recipe!\n"
+            f"If it looks correct, reply with 'yes' or 'no'.\n\n"
             f"Name: {self.recipe.name}\n"
             f"Tags: {', '.join(self.recipe.tags)}\n"
             f"Prep Mins: {self.recipe.prep_minutes}\n"
@@ -88,11 +92,17 @@ class ParseRecipeWorkflow(Workflow):
         try:
             await self._parse_url()
         except ValidationError as e:
-            print(f"Parse recipe ValidationError: {e}")
+            print(f"[ParseRecipeWorkflow] ValidationError: {e}")
             return f"Couldn't parse recipe from {self.url}: {e}", None
         except ValueError as e:
-            print(f"Parse recipe ValueError: {e}")
+            print(f"[ParseRecipeWorkflow] ValueError: {e}")
             return f"Error with LLM call: {e}", None
+        except httpx.ConnectError as e:
+            print(f"[ParseRecipeWorkflow] httpx.ConnectError: {e}")
+            return f"Error fetching recipe: {e}", None
+        except Exception as e:
+            print(f"[ParseRecipeWorkflow] Exception: {e}")
+            return f"Unexpected error: {e}", None
 
         return self._format_message(), PendingAction(
             type="confirm_recipe", data={"recipe": self.recipe}
