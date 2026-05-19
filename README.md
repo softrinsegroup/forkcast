@@ -57,6 +57,12 @@ Then set `DATABASE_URL` in your `.env`:
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mealprep"
 ```
 
+Use a separate config for your tests in `.env.test` so they will be isolated since we need to reset the database after every test:
+
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mealprep_test"
+```
+
 To stop and remove the container:
 
 ```bash
