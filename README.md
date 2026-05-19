@@ -28,12 +28,12 @@ uv run ruff format .
 
 ## Environment
 
-Create an `.env` file at root and fill in:
+Create an `.env` file at root. See `.env.example`.
 
 - `ANTHROPIC_API_KEY`
 - `CHROMA_HOST`
 - `CHROMA_PORT`
-- `DB_PATH` (default: `.data/meal_prep.db`)
+- `DATABASE_URL`
 - `TELEGRAM_BOT_TOKEN`
 - `VOYAGE_API_KEY`
 
