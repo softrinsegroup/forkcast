@@ -290,9 +290,9 @@ The handler becomes thread-aware: each `chat_id` maps to a LangGraph thread.
 
 ### 2.8 — Retire `agent/router.py` and `agent/workflows/__init__.py`
 
-- [ ] Delete `agent/router.py` — replaced by graph nodes
-- [ ] Delete `agent/workflows/__init__.py` Workflow base class — nodes are plain async functions now
-- [ ] Individual workflow files (`meal_plan.py`, `parse_recipe.py`, `chat.py`) become the node function implementations or are inlined into `agent/graph.py`
+- [x] Delete `agent/router.py` — replaced by graph nodes
+- [x] Delete `agent/workflows/__init__.py` Workflow base class — nodes are plain async functions now
+- [x] Individual workflow files (`meal_plan.py`, `parse_recipe.py`, `chat.py`) become the node function implementations or are inlined into `agent/graph.py`
 
 ---
 
