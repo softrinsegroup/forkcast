@@ -214,8 +214,8 @@ Each node is an async function `(state: BotState) -> dict` returning a partial s
 - [x] `parse_recipe_node(state)` — runs `ParseRecipeWorkflow`, returns `{"reply": ..., "pending_recipe": ...}`
 - [x] `confirm_recipe_node(state)` — calls `interrupt()` to pause and wait for user yes/no
 - [x] `save_recipe_node(state)` — saves `state["pending_recipe"]` to `recipe_store` + embeds it
-- [ ] `chat_node(state)` — runs `ChatWorkflow`, returns `{"reply": ...}`
-- [ ] `intent_router(state) -> str` — conditional edge function: returns node name based on `state["intent"]`
+- [x] `chat_node(state)` — runs `ChatWorkflow`, returns `{"reply": ...}`
+- [x] `intent_router(state) -> str` — conditional edge function: returns node name based on `state["intent"]`
 - [ ] `confirm_router(state) -> str` — routes "yes" → `save_recipe`, anything else → `end`
 
 ---

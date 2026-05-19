@@ -2,7 +2,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.vectorstores import VectorStore
 from langgraph.types import interrupt
 
-from agent.classifier import classify
+from agent.classifier import Intent, classify
 from agent.state import BotState
 from agent.workflows.chat import ChatWorkflow
 from agent.workflows.meal_plan import MealPlanWorkflow
@@ -72,3 +72,12 @@ def create_graph(
     async def chat_node(state: BotState) -> BotState:
         reply, pending_action = await ChatWorkflow().run()
         return {"reply": reply}
+
+    async def intent_router(state: BotState) -> str:
+        match state["intent"].intent:
+            case Intent.PLAN:
+                return "meal_plan_node"
+            case Intent.PARSE_RECIPE:
+                return "parse_recipe_node"
+            case Intent.CHAT:
+                return "chat_node"
