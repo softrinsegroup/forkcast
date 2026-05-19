@@ -330,7 +330,7 @@ async def test_format_message_lists_shopping_items(workflow):
 # ---------------------------------------------------------------------------
 
 
-async def test_run_returns_tuple(db):
+async def test_run_returns_nonempty_str(db):
     recipe_store = RecipeStore(db)
     for i in range(1, 6):
         await recipe_store.create(make_recipe())
@@ -344,11 +344,8 @@ async def test_run_returns_tuple(db):
         make_mock_vector_store([1, 2, 3, 4, 5]),
     )
     result = await wf.run()
-
-    assert len(result) == 2
-    assert isinstance(result[0], str)
+    assert isinstance(result, str)
     assert len(result[0]) > 0
-    assert result[1] is None
 
 
 async def test_run_persists_weekly_plan_and_items(db):
@@ -396,5 +393,7 @@ async def test_run_with_no_previous_plan(db):
     assert wf.prev_recipe_ids == []
 
     result = await wf.run()
-    assert isinstance(result[0], str)
-    assert result[1] is None
+    assert isinstance(result, str)
+    assert "Week of" in result
+    assert "Notes" in result
+    assert "Shopping List" in result
