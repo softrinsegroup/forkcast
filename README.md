@@ -79,6 +79,8 @@ To add a new migration, create `migrations/NNN-migration-name.sql`. It will be a
 
 ## Architecture
 
+<img width="782" height="926" alt="meal-prep-agent-flowchart" src="https://github.com/user-attachments/assets/8ee6cd39-a5d3-4ac5-9207-be164109a949" />
+
 A Telegram bot that uses Claude AI for meal planning. Messages are intent-classified, then routed to a workflow that calls Claude to select recipes or parse new ones.
 
 ```plaintext
