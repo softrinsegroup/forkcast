@@ -81,3 +81,11 @@ def create_graph(
                 return "parse_recipe_node"
             case Intent.CHAT:
                 return "chat_node"
+
+    async def confirm_recipe_router(state: BotState) -> str:
+        user_message = state["user_message"].strip().lower()
+        if user_message in ("yes", "y"):
+            return "save_recipe_node"
+
+        # End the workflow if not confirming
+        return "end"
