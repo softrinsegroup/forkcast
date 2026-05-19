@@ -62,14 +62,16 @@ def create_graph(
         )
         return {"user_message": user_input}
 
+    async def discard_recipe(state: BotState) -> BotState:
+        return {"reply": "Got it, I won't save the recipe."}
+
     async def confirm_recipe_router(state: BotState) -> str:
         user_message = state["user_message"].strip().lower()
         if user_message in ("yes", "y"):
             return "save_recipe"
 
-        # End the workflow if not confirming
-        # TODO: possible to send user message back?
-        return END
+        # User did not confirm, discard it
+        return "discard_recipe"
 
     async def save_recipe(state: BotState) -> BotState:
         # Insert Recipe to DB
@@ -99,6 +101,7 @@ def create_graph(
     workflow.add_node("create_meal_plan", create_meal_plan)
     workflow.add_node("parse_recipe", parse_recipe)
     workflow.add_node("confirm_recipe", confirm_recipe)
+    workflow.add_node("discard_recipe", discard_recipe)
     workflow.add_node("save_recipe", save_recipe)
     workflow.add_node("chat", chat)
 
