@@ -7,26 +7,30 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     chat_id = context._chat_id
     await context.bot.send_chat_action(chat_id=chat_id, action="typing")
 
+    # Show user message
     user_message = update.message.text
     print("User:", user_message)
 
+    # thread_id is equivalent to the unique run_id
     config = {"configurable": {"thread_id": chat_id}}
     graph = context.bot_data["graph"]
 
-    # Resume an interrupted graph (e.g. confirm_recipe) instead of restarting
     snapshot = await graph.aget_state(config)
     if snapshot.next:
+        # Resume interrupted state (e.g. confirm_recipe)
         result = await graph.ainvoke(Command(resume=user_message), config=config)
     else:
+        # Non-interrupted state
         result = await graph.ainvoke(
             {"chat_id": chat_id, "user_message": user_message}, config=config
         )
     bot_reply = result.get("reply", "")
 
-    # If the graph is now paused at an interrupt, append its prompt to the reply
+    # If graph is now paused at an interrupt, append its prompt to the reply
     new_snapshot = await graph.aget_state(config)
     for task in new_snapshot.tasks:
         for intr in task.interrupts:
+            # Append interrupt messages to existing reply
             bot_reply = f"{bot_reply}\n\n{intr.value}" if bot_reply else intr.value
 
     print("Bot:", bot_reply)
