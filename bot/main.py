@@ -15,14 +15,15 @@ from storage import (
     ShoppingItemStore,
 )
 from .handlers import handle_message
+from agent import create_graph
 
 
 async def post_init(application: Application) -> None:
     # Init Anthropic client
-    application.bot_data["model_classifier"] = ChatAnthropic(
-        model="claude-haiku-4-5-20251001", max_tokens=64
-    )
-    application.bot_data["model_agent"] = ChatAnthropic(model="claude-sonnet-4-6")
+    model_classifier = ChatAnthropic(model="claude-haiku-4-5-20251001", max_tokens=64)
+    application.bot_data["model_classifier"] = model_classifier
+    model_agent = ChatAnthropic(model="claude-sonnet-4-6")
+    application.bot_data["model_agent"] = model_agent
     print("Initialized Anthropic clients")
 
     # Init DB
@@ -30,8 +31,10 @@ async def post_init(application: Application) -> None:
     application.bot_data["db"] = db
     recipe_store = RecipeStore(db)
     application.bot_data["recipe_store"] = recipe_store
-    application.bot_data["weekly_plan_store"] = WeeklyPlanStore(db)
-    application.bot_data["shopping_item_store"] = ShoppingItemStore(db)
+    weekly_plan_store = WeeklyPlanStore(db)
+    application.bot_data["weekly_plan_store"] = weekly_plan_store
+    shopping_item_store = ShoppingItemStore(db)
+    application.bot_data["shopping_item_store"] = shopping_item_store
     print("Initialized database")
 
     # Init Embeddings
@@ -54,6 +57,17 @@ async def post_init(application: Application) -> None:
 
     # Reconcilation
     await reconcile_recipes(recipe_store, vector_store)
+
+    # Create Graph
+    graph = create_graph(
+        model_classifier,
+        model_agent,
+        recipe_store,
+        weekly_plan_store,
+        shopping_item_store,
+        vector_store,
+    )
+    application.bot_data["graph"] = graph
 
     print("Meal Prep Agent is ready for your command 👨‍🍳")
 
