@@ -76,10 +76,10 @@ A Telegram bot that uses Claude AI for meal planning. Messages are intent-classi
 ```plaintext
 Telegram Message
       ↓
-Intent Classifier (claude-haiku-4-5, forced tool schema)
-      ├→ "plan"       → MealPlanWorkflow (claude-sonnet-4-6)
-      ├→ "add_recipe" → AddRecipeWorkflow (claude-sonnet-4-6)
-      └→ "chat"       → ChatWorkflow (claude-sonnet-4-6 + history)
+Intent Classifier (claude-haiku-4-5)
+      ├→ "plan"         → MealPlanWorkflow (claude-sonnet-4-6)
+      ├→ "parse_recipe" → ParseRecipeWorkflow (claude-sonnet-4-6)
+      └→ "chat"         → ChatWorkflow (claude-sonnet-4-6) # not implemented yet
 ```
 
 ## Design Decisions
@@ -102,10 +102,6 @@ Intent Classifier (claude-haiku-4-5, forced tool schema)
 - Offline eval harness: given a fixed recipe bank + user message, assert the selected meals satisfy constraints (variety, calorie targets, user preferences)
 - Classification accuracy tracking: log `(input, predicted_intent, ground_truth)` triples and run a nightly eval job
 - LLM-as-judge: use Claude to score meal plan quality across dimensions like balance and variety
-
-### Retrieval / RAG
-
-- Replace linear recipe scan with semantic search over recipe embeddings so queries like "something light and Asian" work without keyword matching
 
 ### Multi-modal
 
