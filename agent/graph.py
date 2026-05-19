@@ -1,6 +1,9 @@
+import os
 from langchain_core.language_models import BaseChatModel
 from langchain_core.vectorstores import VectorStore
 from langgraph.types import interrupt
+from langgraph.graph import StateGraph
+from langgraph.checkpoint.postgres import PostgresSaver
 
 from agent.classifier import Intent, classify
 from agent.state import BotState
@@ -21,12 +24,12 @@ def create_graph(
     shopping_item_store: ShoppingItemStore,
     vector_store: VectorStore,
 ):
-    async def classify_node(state: BotState) -> BotState:
+    async def classify_intent(state: BotState) -> BotState:
         user_msg = state["user_message"]
         result = await classify(user_msg, model_classifier)
         return {"intent": result}
 
-    async def meal_plan_node(state: BotState) -> BotState:
+    async def create_meal_plan(state: BotState) -> BotState:
         reply, pending_action = await MealPlanWorkflow(
             model_agent,
             recipe_store,
@@ -36,18 +39,18 @@ def create_graph(
         ).run()
         return {"reply": reply}
 
-    async def parse_recipe_node(state: BotState) -> BotState:
+    async def parse_recipe(state: BotState) -> BotState:
         user_msg = state["user_message"]
         url = extract_url(user_msg)
         reply, pending_action = await ParseRecipeWorkflow(model_agent, url).run()
         # TODO: handle missing pending action
         return {"reply": reply, "pending_recipe": pending_action.data["recipe"]}
 
-    async def confirm_recipe_node(state: BotState) -> BotState:
+    async def confirm_recipe(state: BotState) -> BotState:
         user_input = interrupt("Does your recipe look correct?")
         return {"user_message": user_input}
 
-    async def save_recipe_node(state: BotState) -> BotState:
+    async def save_recipe(state: BotState) -> BotState:
         user_message = state["user_message"].strip().lower()
         if user_message in ("yes", "y"):
             # Insert Recipe to DB
@@ -69,23 +72,47 @@ def create_graph(
 
         return {"reply": "Cancelled saving your recipe."}
 
-    async def chat_node(state: BotState) -> BotState:
+    async def chat(state: BotState) -> BotState:
         reply, pending_action = await ChatWorkflow().run()
         return {"reply": reply}
 
     async def intent_router(state: BotState) -> str:
         match state["intent"].intent:
             case Intent.PLAN:
-                return "meal_plan_node"
+                return "create_meal_plan"
             case Intent.PARSE_RECIPE:
-                return "parse_recipe_node"
+                return "parse_recipe"
             case Intent.CHAT:
-                return "chat_node"
+                return "chat"
 
     async def confirm_recipe_router(state: BotState) -> str:
         user_message = state["user_message"].strip().lower()
         if user_message in ("yes", "y"):
-            return "save_recipe_node"
+            return "save_recipe"
 
         # End the workflow if not confirming
         return "end"
+
+    # Build graph
+    workflow = StateGraph()
+    workflow.add_node("classify_intent", classify_intent)
+    workflow.add_node("create_meal_plan", create_meal_plan)
+    workflow.add_node("parse_recipe", parse_recipe)
+    workflow.add_node("confirm_recipe", confirm_recipe)
+    workflow.add_node("save_recipe", save_recipe)
+    workflow.add_node("chat", chat)
+
+    # Add edges
+    workflow.add_edge("START", "classify_intent")
+    workflow.add_conditional_edges("classify_intent", intent_router)
+    workflow.add_edge("parse_recipe", "confirm_recipe")
+    workflow.add_conditional_edges("confirm_recipe", confirm_recipe_router)
+    workflow.add_edge("create_meal_plan", "END")
+    workflow.add_edge("save_recipe", "END")
+    workflow.add_edge("chat", "END")
+
+    # Setup checkpointing
+    with PostgresSaver.from_conn_string(os.getenv("DATABASE_URL")) as checkpointer:
+        checkpointer.setup()
+        graph = workflow.compile(checkpointer=checkpointer)
+        return graph

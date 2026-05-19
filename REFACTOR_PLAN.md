@@ -216,13 +216,13 @@ Each node is an async function `(state: BotState) -> dict` returning a partial s
 - [x] `save_recipe_node(state)` — saves `state["pending_recipe"]` to `recipe_store` + embeds it
 - [x] `chat_node(state)` — runs `ChatWorkflow`, returns `{"reply": ...}`
 - [x] `intent_router(state) -> str` — conditional edge function: returns node name based on `state["intent"]`
-- [ ] `confirm_router(state) -> str` — routes "yes" → `save_recipe`, anything else → `end`
+- [x] `confirm_router(state) -> str` — routes "yes" → `save_recipe`, anything else → `end`
 
 ---
 
 ### 2.4 — Build the Graph: `agent/graph.py`
 
-- [ ] Wire nodes and edges:
+- [x] Wire nodes and edges:
   ```python
   graph = StateGraph(BotState)
   graph.add_node("classify", classify_node)
@@ -244,7 +244,7 @@ Each node is an async function `(state: BotState) -> dict` returning a partial s
   graph.add_edge("save_recipe", END)
   graph.add_edge("chat", END)
   ```
-- [ ] Compile with `AsyncSqliteSaver` checkpointer:
+- [x] Compile with `AsyncSqliteSaver` checkpointer:
   ```python
   from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
   checkpointer = AsyncSqliteSaver.from_conn_string("data/langgraph.db")
