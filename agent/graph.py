@@ -29,6 +29,15 @@ def create_graph(
         result = await classify(user_msg, model_classifier)
         return {"intent": result}
 
+    async def intent_router(state: BotState) -> str:
+        match state["intent"].intent:
+            case Intent.PLAN:
+                return "create_meal_plan"
+            case Intent.PARSE_RECIPE:
+                return "parse_recipe"
+            case Intent.CHAT:
+                return "chat"
+
     async def create_meal_plan(state: BotState) -> BotState:
         reply = await MealPlanWorkflow(
             model_agent,
@@ -50,48 +59,36 @@ def create_graph(
         user_input = interrupt("Does your recipe look correct?")
         return {"user_message": user_input}
 
-    async def save_recipe(state: BotState) -> BotState:
-        user_message = state["user_message"].strip().lower()
-        if user_message in ("yes", "y"):
-            # Insert Recipe to DB
-            recipe: Recipe = state["pending_recipe"]
-            recipe_id = await recipe_store.create(recipe)
-            # Missing id because it hasn't be inserted to the DB
-            recipe.id = recipe_id
-
-            try:
-                # Embed Recipe
-                await embed_recipe(vector_store, recipe)
-                await recipe_store.update_embedded([recipe_id])
-            except Exception as e:
-                print(f"Warning: embedding failed for recipe_id={recipe_id}: {e}")
-
-            return {
-                "reply": f"I've saved your {recipe.name} Recipe for future meal plans."
-            }
-
-        return {"reply": "Cancelled saving your recipe."}
-
-    async def chat(state: BotState) -> BotState:
-        reply = await ChatWorkflow().run()
-        return {"reply": reply}
-
-    async def intent_router(state: BotState) -> str:
-        match state["intent"].intent:
-            case Intent.PLAN:
-                return "create_meal_plan"
-            case Intent.PARSE_RECIPE:
-                return "parse_recipe"
-            case Intent.CHAT:
-                return "chat"
-
     async def confirm_recipe_router(state: BotState) -> str:
         user_message = state["user_message"].strip().lower()
         if user_message in ("yes", "y"):
             return "save_recipe"
 
         # End the workflow if not confirming
-        return "end"
+        # TODO: possible to send user message back?
+        return "END"
+
+    async def save_recipe(state: BotState) -> BotState:
+        # Insert Recipe to DB
+        recipe: Recipe = state["pending_recipe"]
+        recipe_id = await recipe_store.create(recipe)
+        # Hydrate missing id because it hasn't be inserted to the DB
+        recipe.id = recipe_id
+
+        # Embed Recipe
+        try:
+            await embed_recipe(vector_store, recipe)
+            await recipe_store.update_embedded([recipe_id])
+        except Exception as e:
+            # Swallow exception, reconciliation will try to embed later
+            print(f"Warning: embedding failed for recipe_id={recipe_id}: {e}")
+
+        reply = f"I've saved your {recipe.name} Recipe for future meal plans."
+        return {"reply": reply}
+
+    async def chat(state: BotState) -> BotState:
+        reply = await ChatWorkflow().run()
+        return {"reply": reply}
 
     # Build graph
     workflow = StateGraph()
@@ -105,8 +102,10 @@ def create_graph(
     # Add edges
     workflow.add_edge("START", "classify_intent")
     workflow.add_conditional_edges("classify_intent", intent_router)
+
     workflow.add_edge("parse_recipe", "confirm_recipe")
     workflow.add_conditional_edges("confirm_recipe", confirm_recipe_router)
+
     workflow.add_edge("create_meal_plan", "END")
     workflow.add_edge("save_recipe", "END")
     workflow.add_edge("chat", "END")

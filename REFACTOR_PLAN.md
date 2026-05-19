@@ -255,10 +255,10 @@ Each node is an async function `(state: BotState) -> dict` returning a partial s
 
 ### 2.5 — Replace `PendingAction` with `interrupt()`
 
-- [ ] Delete `PendingAction` from `models/domain.py`
-- [ ] Delete `_handle_pending_action()` and `_store_pending_action()` from `bot/handlers.py`
-- [ ] `confirm_recipe_node` uses `interrupt()` — graph pauses here and resumes on next user message
-- [ ] The yes/no check moves into `confirm_router` as a pure conditional edge function
+- [x] Delete `PendingAction` from `models/domain.py`
+- [x] Delete `_handle_pending_action()` and `_store_pending_action()` from `bot/handlers.py`
+- [x] `confirm_recipe_node` uses `interrupt()` — graph pauses here and resumes on next user message
+- [x] The yes/no check moves into `confirm_router` as a pure conditional edge function
 
 ---
 
