@@ -209,8 +209,8 @@ Define the shared state that flows through the graph.
 
 Each node is an async function `(state: BotState) -> dict` returning a partial state update.
 
-- [ ] `classify_node(state)` — calls the LangChain classifier chain from Phase 1, returns `{"intent": ...}`
-- [ ] `plan_node(state)` — runs `MealPlanWorkflow`, returns `{"reply": ...}`
+- [x] `classify_node(state)` — calls the LangChain classifier chain from Phase 1, returns `{"intent": ...}`
+- [x] `plan_node(state)` — runs `MealPlanWorkflow`, returns `{"reply": ...}`
 - [ ] `parse_recipe_node(state)` — runs `ParseRecipeWorkflow`, returns `{"reply": ..., "pending_recipe": ...}`
 - [ ] `confirm_recipe_node(state)` — calls `interrupt()` to pause and wait for user yes/no
 - [ ] `save_recipe_node(state)` — saves `state["pending_recipe"]` to `recipe_store` + embeds it
