@@ -25,9 +25,9 @@ class WeeklyPlanStore:
                 "INSERT INTO weekly_plans (timestamp, recipe_ids, created_at) "
                 "VALUES ($1, $2, $3) "
                 "RETURNING id",
-                plan.timestamp.isoformat(),
+                plan.timestamp,
                 json.dumps(plan.recipe_ids),
-                plan.created_at.isoformat(),
+                plan.created_at,
             )
             if weekly_plan_id is None:
                 raise RuntimeError("INSERT into weekly_plans returned no rowid")
@@ -57,7 +57,7 @@ class WeeklyPlanStore:
 
         row = await self.db.fetchrow(
             "SELECT * FROM weekly_plans WHERE timestamp = $1 LIMIT 1",
-            last_monday.isoformat(),
+            last_monday,
         )
         if row is None:
             return None
@@ -67,9 +67,9 @@ class WeeklyPlanStore:
         async with self.db.transaction():
             await self.db.execute(
                 "UPDATE weekly_plans SET timestamp=$1, recipe_ids=$2, created_at=$3 WHERE id=$4",
-                plan.timestamp.isoformat(),
+                plan.timestamp,
                 json.dumps(plan.recipe_ids),
-                plan.created_at.isoformat(),
+                plan.created_at,
                 plan.id,
             )
 
@@ -93,8 +93,8 @@ class WeeklyPlanStore:
         ]
         return WeeklyPlan(
             id=row["id"],
-            timestamp=date.fromisoformat(row["timestamp"]),
+            timestamp=row["timestamp"],
             recipe_ids=json.loads(row["recipe_ids"]),
             shopping_items=shopping_items,
-            created_at=datetime.fromisoformat(row["created_at"]),
+            created_at=row["created_at"],
         )

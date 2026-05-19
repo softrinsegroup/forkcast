@@ -32,7 +32,7 @@ class RecipeStore:
                 recipe.prep_minutes,
                 recipe.cook_minutes,
                 json.dumps(recipe.tags),
-                recipe.created_at.isoformat(),
+                recipe.created_at,
             )
             if recipe_id is None:
                 raise RuntimeError("INSERT into recipes returned no rowid")
@@ -81,7 +81,7 @@ class RecipeStore:
                 recipe.prep_minutes,
                 recipe.cook_minutes,
                 json.dumps(recipe.tags),
-                recipe.created_at.isoformat(),
+                recipe.created_at,
                 recipe.id,
             )
             await self.db.execute(
@@ -89,9 +89,8 @@ class RecipeStore:
             )
             for ingredient in recipe.ingredients:
                 await self.db.execute(
-                    "INSERT INTO ingredients (id, recipe_id, name, unit, amount) "
-                    "VALUES ($1, $2, $3, $4, $5)",
-                    ingredient.id,
+                    "INSERT INTO ingredients (recipe_id, name, unit, amount) "
+                    "VALUES ($1, $2, $3, $4)",
                     recipe.id,
                     ingredient.name,
                     ingredient.unit,
@@ -130,6 +129,6 @@ class RecipeStore:
             prep_minutes=row["prep_minutes"],
             cook_minutes=row["cook_minutes"],
             tags=json.loads(row["tags"]),
-            created_at=datetime.fromisoformat(row["created_at"]),
+            created_at=row["created_at"],
             embedded=row["embedded"],
         )

@@ -6,7 +6,8 @@
       "Bash(uv run *)",
       "Bash(python *)",
       "Bash(.venv/bin/pytest *)",
-      "Bash(find *)"
+      "Bash(find *)",
+      "Bash(source *)"
     ]
   }
 }
