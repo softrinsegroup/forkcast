@@ -30,7 +30,7 @@ def create_graph(
         return {"intent": result}
 
     async def create_meal_plan(state: BotState) -> BotState:
-        reply, pending_action = await MealPlanWorkflow(
+        reply = await MealPlanWorkflow(
             model_agent,
             recipe_store,
             weekly_plan_store,
@@ -42,9 +42,9 @@ def create_graph(
     async def parse_recipe(state: BotState) -> BotState:
         user_msg = state["user_message"]
         url = extract_url(user_msg)
-        reply, pending_action = await ParseRecipeWorkflow(model_agent, url).run()
-        # TODO: handle missing pending action
-        return {"reply": reply, "pending_recipe": pending_action.data["recipe"]}
+        reply, recipe = await ParseRecipeWorkflow(model_agent, url).run()
+        # TODO: handle if recipe is None
+        return {"reply": reply, "pending_recipe": recipe}
 
     async def confirm_recipe(state: BotState) -> BotState:
         user_input = interrupt("Does your recipe look correct?")
@@ -73,7 +73,7 @@ def create_graph(
         return {"reply": "Cancelled saving your recipe."}
 
     async def chat(state: BotState) -> BotState:
-        reply, pending_action = await ChatWorkflow().run()
+        reply = await ChatWorkflow().run()
         return {"reply": reply}
 
     async def intent_router(state: BotState) -> str:
