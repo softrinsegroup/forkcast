@@ -17,7 +17,15 @@ def extract_url(text: str) -> str | None:
 
 
 async def web_fetch(url: str) -> str:
+    """Using BeautifulSoup as a primary web fetch."""
     async with httpx.AsyncClient(follow_redirects=True, timeout=30) as client:
         resp = await client.get(url)
         soup = BeautifulSoup(resp.text, "html.parser")
         return soup.get_text(separator="\n", strip=True)
+
+
+async def backup_web_fetch(url: str) -> str:
+    """Using jina.ai as a backup web fetch provider."""
+    async with httpx.AsyncClient(follow_redirects=True, timeout=30) as client:
+        resp = await client.get(f"https://r.jina.ai/{url}")
+        return resp.text
