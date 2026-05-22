@@ -68,3 +68,16 @@ async def test_classify_confidence_boundary_one():
     assert isinstance(result, ClassifiedIntent)
     assert result.intent == Intent.PLAN
     assert result.confidence == 1.0
+
+
+async def test_classify_llm_failure_falls_back_to_chat():
+    # The classifier is the first node for every message. Without the fallback, any
+    # Anthropic API error (rate limit, timeout, bad structured output) would silence the
+    # bot entirely. The fallback routes to CHAT so the user still gets a response.
+    model = MagicMock(spec=BaseChatModel)
+    model.with_structured_output.return_value = AsyncMock(
+        side_effect=RuntimeError("API unavailable")
+    )
+    result = await classify("plan my week", model)
+    assert result.intent == Intent.CHAT
+    assert result.confidence == 0.0

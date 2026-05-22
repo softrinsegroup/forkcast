@@ -42,7 +42,11 @@ classify_prompt = ChatPromptTemplate.from_messages(
 
 
 async def classify(message: str, model: BaseChatModel) -> ClassifiedIntent:
-    chain = classify_prompt | model.with_structured_output(ClassifiedIntent)
-    intent: ClassifiedIntent = await chain.ainvoke({"message": message})
-    print(f"Intent: {intent.intent} {intent.confidence}")
-    return intent
+    try:
+        chain = classify_prompt | model.with_structured_output(ClassifiedIntent)
+        intent: ClassifiedIntent = await chain.ainvoke({"message": message})
+        print(f"Intent: {intent.intent} {intent.confidence}")
+        return intent
+    except Exception as e:
+        print(f"[classify] Error: {e}, falling back to CHAT")
+        return ClassifiedIntent(intent=Intent.CHAT, confidence=0.0)

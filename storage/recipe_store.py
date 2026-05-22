@@ -57,6 +57,9 @@ class RecipeStore:
         return await self._load_recipe(dict(row))
 
     async def get_by_ids(self, ids: list[int]) -> list[Recipe]:
+        if not ids:
+            return []
+
         placeholders = ", ".join(f"${i + 1}" for i in range(len(ids)))
         rows = await self.db.fetch(
             f"SELECT * FROM recipes WHERE id IN ({placeholders})", *ids

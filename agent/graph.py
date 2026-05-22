@@ -36,25 +36,36 @@ def create_graph(
                 return "create_meal_plan"
             case Intent.PARSE_RECIPE:
                 return "parse_recipe"
-            case Intent.CHAT:
+            case _:
                 return "chat"
 
     async def create_meal_plan(state: BotState) -> BotState:
-        reply = await MealPlanWorkflow(
-            model_agent,
-            recipe_store,
-            weekly_plan_store,
-            shopping_item_store,
-            vector_store,
-        ).run()
+        try:
+            reply = await MealPlanWorkflow(
+                model_agent,
+                recipe_store,
+                weekly_plan_store,
+                shopping_item_store,
+                vector_store,
+            ).run()
+        except Exception as e:
+            print(f"[create_meal_plan] Error: {e}")
+            reply = ["Sorry, I couldn't generate a meal plan. Please try again."]
         return {"reply": reply}
 
     async def parse_recipe(state: BotState) -> BotState:
-        user_msg = state["user_message"]
-        url = extract_url(user_msg)
+        url = extract_url(state["user_message"])
+        if not url:
+            return {
+                "reply": "I couldn't find a URL in your message. Please include a recipe link.",
+                "pending_recipe": None,
+            }
+
         reply, recipe = await ParseRecipeWorkflow(model_agent, url).run()
-        # TODO: handle if recipe is None
         return {"reply": reply, "pending_recipe": recipe}
+
+    def parse_recipe_router(state: BotState) -> str:
+        return "confirm_recipe" if state.get("pending_recipe") else END
 
     async def confirm_recipe(state: BotState) -> BotState:
         user_input = interrupt(
@@ -109,11 +120,12 @@ def create_graph(
     workflow.add_edge(START, "classify_intent")
     workflow.add_conditional_edges("classify_intent", intent_router)
 
-    workflow.add_edge("parse_recipe", "confirm_recipe")
+    workflow.add_conditional_edges("parse_recipe", parse_recipe_router)
     workflow.add_conditional_edges("confirm_recipe", confirm_recipe_router)
 
     workflow.add_edge("create_meal_plan", END)
     workflow.add_edge("save_recipe", END)
+    workflow.add_edge("discard_recipe", END)
     workflow.add_edge("chat", END)
 
     return workflow.compile(checkpointer=checkpointer)

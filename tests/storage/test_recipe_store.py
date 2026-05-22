@@ -50,6 +50,12 @@ async def test_recipe_get_by_ids(db):
     assert names == {"Pasta", "Cake"}
 
 
+async def test_get_by_ids_empty_list_returns_empty(db):
+    store = RecipeStore(db)
+    result = await store.get_by_ids([])
+    assert result == []
+
+
 # ---------------------------------------------------------------------------
 # get_all_unembedded
 # ---------------------------------------------------------------------------
