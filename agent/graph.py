@@ -1,5 +1,7 @@
 from langchain_core.language_models import BaseChatModel
 from langchain_core.vectorstores import VectorStore
+from langfuse.langchain import CallbackHandler
+from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import interrupt
 from langgraph.graph import StateGraph
 from langgraph.checkpoint.base import BaseCheckpointSaver
@@ -24,7 +26,8 @@ def create_graph(
     shopping_item_store: ShoppingItemStore,
     vector_store: VectorStore,
     checkpointer: BaseCheckpointSaver,
-):
+    langfuse_handler: CallbackHandler | None,
+) -> CompiledStateGraph:
     async def classify_intent(state: BotState) -> BotState:
         user_msg = state["user_message"]
         result = await classify(user_msg, model_classifier)
@@ -128,4 +131,7 @@ def create_graph(
     workflow.add_edge("discard_recipe", END)
     workflow.add_edge("chat", END)
 
-    return workflow.compile(checkpointer=checkpointer)
+    callbacks = [langfuse_handler] if langfuse_handler else []
+    return workflow.compile(checkpointer=checkpointer).with_config(
+        {"callbacks": callbacks}
+    )

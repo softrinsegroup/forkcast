@@ -27,9 +27,11 @@ async def post_init(application: Application) -> None:
     langfuse = get_langfuse_client()
     if langfuse.auth_check():
         print("Initialized and authenticated LangFuse client")
-        application.bot_data["langfuse_handler"] = CallbackHandler()
+        langfuse_handler = CallbackHandler()
+        application.bot_data["langfuse_handler"] = langfuse_handler
     else:
         print("LangFuse authentication failed. Check your credentials and host.")
+        langfuse_handler = None
 
     # Init Anthropic client
     model_classifier = ChatAnthropic(model="claude-haiku-4-5-20251001", max_tokens=64)
@@ -80,13 +82,14 @@ async def post_init(application: Application) -> None:
 
     # Create Graph
     graph = create_graph(
-        model_classifier,
-        model_agent,
-        recipe_store,
-        weekly_plan_store,
-        shopping_item_store,
-        vector_store,
+        model_classifier=model_classifier,
+        model_agent=model_agent,
+        recipe_store=recipe_store,
+        weekly_plan_store=weekly_plan_store,
+        shopping_item_store=shopping_item_store,
+        vector_store=vector_store,
         checkpointer=checkpointer,
+        langfuse_handler=langfuse_handler,
     )
     application.bot_data["graph"] = graph
 
