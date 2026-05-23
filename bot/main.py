@@ -7,6 +7,7 @@ from langchain_chroma import Chroma
 from langchain_voyageai import VoyageAIEmbeddings
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langfuse import get_client as get_langfuse_client
+from langfuse.langchain import CallbackHandler
 import chromadb
 
 from storage import (
@@ -26,6 +27,7 @@ async def post_init(application: Application) -> None:
     langfuse = get_langfuse_client()
     if langfuse.auth_check():
         print("Initialized and authenticated LangFuse client")
+        application.bot_data["langfuse_handler"] = CallbackHandler()
     else:
         print("LangFuse authentication failed. Check your credentials and host.")
 
