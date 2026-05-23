@@ -6,6 +6,7 @@ from telegram.ext import Application, ContextTypes, MessageHandler, filters
 from langchain_chroma import Chroma
 from langchain_voyageai import VoyageAIEmbeddings
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from langfuse import get_client as get_langfuse_client
 import chromadb
 
 from storage import (
@@ -21,6 +22,13 @@ from agent import create_graph
 
 
 async def post_init(application: Application) -> None:
+    # Init LangFuse
+    langfuse = get_langfuse_client()
+    if langfuse.auth_check():
+        print("Initialized and authenticated LangFuse client")
+    else:
+        print("LangFuse authentication failed. Check your credentials and host.")
+
     # Init Anthropic client
     model_classifier = ChatAnthropic(model="claude-haiku-4-5-20251001", max_tokens=64)
     application.bot_data["model_classifier"] = model_classifier
