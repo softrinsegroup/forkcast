@@ -37,6 +37,12 @@ Create a `.env` file at root. See `.env.example`.
 - `TELEGRAM_BOT_TOKEN`
 - `VOYAGE_API_KEY`
 
+**Optional — Langfuse observability (omit to disable tracing):**
+
+- `LANGFUSE_HOST` (defaults to `https://cloud.langfuse.com`)
+- `LANGFUSE_PUBLIC_KEY`
+- `LANGFUSE_SECRET_KEY`
+
 **Create a `.env.test` file at root for a separated test environment.**
 
 ## Database Setup
@@ -132,6 +138,16 @@ Meal Prep Agent uses RAG to surface relevant recipes when building a meal plan, 
 
 This keeps prompt size bounded and improves selection quality by giving Claude a curated, contextually relevant subset of recipes rather than an unbounded list.
 
+## Observability (Langfuse)
+
+Langfuse traces every LangGraph invocation when credentials are present. If the Langfuse env vars are missing or auth fails, the bot starts normally with tracing disabled — no hard dependency on the service.
+
+**What gets traced:**
+
+- Every graph run: node-by-node execution, latency, and total duration
+- Each Claude API call: model, prompt, completion, token counts, and cost
+- Prompt cache hit/miss via Anthropic's usage fields
+
 ## Design Decisions
 
 - **Multi-model routing** — `claude-haiku-4-5` for intent classification (fast, cheap); `claude-sonnet-4-6` for meal planning and recipe parsing (capable). Cost is optimized at the routing layer, not as an afterthought.
@@ -141,11 +157,6 @@ This keeps prompt size bounded and improves selection quality by giving Claude a
 - **Atomic writes** — Storage uses `.tmp` → `os.replace()` + `asyncio.Lock` to prevent partial writes under concurrent requests.
 
 ## Roadmap
-
-### Observability
-
-- Integrate [Langfuse](https://langfuse.com) to trace every Claude API call: prompt, completion, model, latency, token counts, and cost per request
-- Add a `/stats` Telegram command surfacing weekly token spend and cache hit rate
 
 ### Evals
 
