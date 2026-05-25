@@ -4,8 +4,8 @@ import asyncio
 from datetime import datetime, timezone
 from pathlib import Path
 
-from storage.db import close_db, init_db
-from models.prompt import PromptType
+from storage import close_db, init_db
+from models import PromptType
 
 
 async def cmd_add(args) -> None:
@@ -30,7 +30,9 @@ async def cmd_add(args) -> None:
             )
             if prompt_id is None:
                 raise RuntimeError("INSERT into prompts returned no id")
-        print(f"Prompt created: id={prompt_id} type={args.type} version={args.version} active={args.active}")
+        print(
+            f"Prompt created: id={prompt_id} type={args.type} version={args.version} active={args.active}"
+        )
     finally:
         await close_db(db)
 
@@ -44,7 +46,9 @@ async def cmd_list(args) -> None:
         if not rows:
             print("No prompts found.")
             return
-        print(f"{'ID':<4} {'TYPE':<15} {'VER':<5} {'ACTIVE':<8} {'MODEL':<25} {'NOTES':<30} CREATED_AT")
+        print(
+            f"{'ID':<4} {'TYPE':<15} {'VER':<5} {'ACTIVE':<8} {'MODEL':<25} {'NOTES':<30} CREATED_AT"
+        )
         print("-" * 100)
         for r in rows:
             print(
@@ -63,7 +67,9 @@ async def cmd_activate(args) -> None:
             print(f"No prompt found with id={args.id}")
             return
         async with db.transaction():
-            await db.execute("UPDATE prompts SET active=false WHERE type=$1", row["type"])
+            await db.execute(
+                "UPDATE prompts SET active=false WHERE type=$1", row["type"]
+            )
             await db.execute("UPDATE prompts SET active=true WHERE id=$1", args.id)
         print(f"Prompt id={args.id} (type={row['type']}) is now active")
     finally:
@@ -79,7 +85,9 @@ def main() -> None:
     add_p = sub.add_parser("add", help="Insert a new prompt version")
     add_p.add_argument("--type", required=True, choices=valid_types)
     add_p.add_argument("--version", required=True, type=int)
-    add_p.add_argument("--file", required=True, help="Path to file containing prompt text")
+    add_p.add_argument(
+        "--file", required=True, help="Path to file containing prompt text"
+    )
     add_p.add_argument("--model", default=None)
     add_p.add_argument("--notes", default=None)
     add_p.add_argument("--active", action="store_true", default=False)
