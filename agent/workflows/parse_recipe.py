@@ -4,23 +4,9 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field, ValidationError
 
-from models import Recipe
-from models.domain import Ingredient
+from models import Recipe, Ingredient, PromptType
+from storage import PromptStore
 from utils import web_fetch, backup_web_fetch
-
-
-PARSE_RECIPE_PROMPT = """
-You are a Meal Planning Assistant. Extract the recipe from the provided page content and return it as structured data.
-
-Extraction rules:
-- `name`: the recipe title as written on the page.
-- `ingredients`: normalize each ingredient to a single item with a numeric `amount`, a lowercase singular `unit` (e.g. "cup", "tbsp", "g", "clove", "piece"), and a clean `name` (no brand names, no prep notes — move prep
-notes like "finely chopped" to the instruction steps). If no unit applies (e.g. "3 eggs"), use `"whole"`.
-- `instructions`: one clear action per step as a list of strings. Split multi-action sentences into separate steps.
-- `servings`: integer. If not stated, estimate from ingredient quantities (default 4).
-- `prep_minutes` / `cook_minutes`: integers. If the page gives a combined time, split it roughly 1/3 prep, 2/3 cook. If not stated, make a reasonable estimate.
-- `tags`: assign 2-5 lowercase tags from what the recipe actually is (e.g. "chicken", "pasta", "vegetarian", "quick", "soup", "beef", "seafood", "salad", "breakfast").
-"""
 
 
 class ParseRecipeInput(BaseModel):
@@ -42,16 +28,19 @@ class ParseRecipeWorkflow:
         self,
         model: BaseChatModel,
         url: str,
+        prompt_store: PromptStore,
     ):
         self.model = model
         self.url = url
+        self.prompt_store = prompt_store
 
         self.recipe: Recipe | None = None
 
     async def _parse_page_content(self, page_content: str) -> None:
         # Parse page content with LLM
+        prompt = await self.prompt_store.get(PromptType.PARSE_RECIPE)
         sys_msg = SystemMessage(
-            content=PARSE_RECIPE_PROMPT,
+            content=prompt,
             additional_kwargs={"cache_control": {"type": "ephemeral"}},
         )
         human_msg = HumanMessage(content=page_content)
