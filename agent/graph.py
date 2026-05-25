@@ -13,7 +13,7 @@ from agent.workflows.chat import ChatWorkflow
 from agent.workflows.meal_plan import MealPlanWorkflow
 from agent.workflows.parse_recipe import ParseRecipeWorkflow
 from models import Recipe
-from storage import RecipeStore, WeeklyPlanStore, ShoppingItemStore
+from storage import PromptStore, RecipeStore, WeeklyPlanStore, ShoppingItemStore
 from storage import embed_recipe
 from utils import extract_url
 
@@ -24,13 +24,14 @@ def create_graph(
     recipe_store: RecipeStore,
     weekly_plan_store: WeeklyPlanStore,
     shopping_item_store: ShoppingItemStore,
+    prompt_store: PromptStore,
     vector_store: VectorStore,
     checkpointer: BaseCheckpointSaver,
     langfuse_handler: CallbackHandler | None,
 ) -> CompiledStateGraph:
     async def classify_intent(state: BotState) -> BotState:
         user_msg = state["user_message"]
-        result = await classify(user_msg, model_classifier)
+        result = await classify(user_msg, model_classifier, prompt_store)
         return {"intent": result}
 
     async def intent_router(state: BotState) -> str:

@@ -11,6 +11,7 @@ from langfuse.langchain import CallbackHandler
 import chromadb
 
 from storage import (
+    PromptStore,
     init_db,
     close_db,
     reconcile_recipes,
@@ -49,6 +50,8 @@ async def post_init(application: Application) -> None:
     application.bot_data["weekly_plan_store"] = weekly_plan_store
     shopping_item_store = ShoppingItemStore(db)
     application.bot_data["shopping_item_store"] = shopping_item_store
+    prompt_store = PromptStore(db)
+    application.bot_data["prompt_store"] = prompt_store
     print("Initialized database")
 
     # Init Embeddings
@@ -87,6 +90,7 @@ async def post_init(application: Application) -> None:
         recipe_store=recipe_store,
         weekly_plan_store=weekly_plan_store,
         shopping_item_store=shopping_item_store,
+        prompt_store=prompt_store,
         vector_store=vector_store,
         checkpointer=checkpointer,
         langfuse_handler=langfuse_handler,

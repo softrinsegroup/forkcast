@@ -1,20 +1,10 @@
 from enum import Enum
 from langchain_core.language_models import BaseChatModel
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
-
-CLASSIFY_INTENT_PROMPT = """
-You are an intent classifier for a Meal Planning Assistant. Classify the user's message into exactly one of the following intents:
-
-Intents:
-- `parse_recipe` — user wants to add a recipe from a URL (e.g. "add this recipe https://...", "save this recipe https://...")
-- `plan` — user wants to generate a meal plan for the week (e.g. "plan my meals", "what should I eat this week", "make me a meal plan")
-- `chat` — anything else: questions, feedback, greetings, unclear requests
-
-Set `confidence` between 0.0 and 1.0 — use lower values when the message is ambiguous.
-"""
+from models import PromptType
+from storage import PromptStore
 
 
 class Intent(str, Enum):
@@ -30,21 +20,21 @@ class ClassifiedIntent(BaseModel):
     )
 
 
-classify_prompt = ChatPromptTemplate.from_messages(
-    [
-        SystemMessage(
-            content=CLASSIFY_INTENT_PROMPT,
-            additional_kwargs={"cache_control": {"type": "ephemeral"}},
-        ),
-        ("human", "Classify this message: {message}"),
-    ]
-)
-
-
-async def classify(message: str, model: BaseChatModel) -> ClassifiedIntent:
+async def classify(
+    message: str, model: BaseChatModel, prompt_store: PromptStore
+) -> ClassifiedIntent:
     try:
-        chain = classify_prompt | model.with_structured_output(ClassifiedIntent)
-        intent: ClassifiedIntent = await chain.ainvoke({"message": message})
+        prompt = await prompt_store.get(PromptType.CLASSIFIER)
+        messages = [
+            SystemMessage(
+                content=prompt,
+                additional_kwargs={"cache_control": {"type": "ephemeral"}},
+            ),
+            HumanMessage(content=f"Classify this message: {message}"),
+        ]
+        intent: ClassifiedIntent = await model.with_structured_output(
+            ClassifiedIntent
+        ).ainvoke(messages)
         print(f"Intent: {intent.intent} {intent.confidence}")
         return intent
     except Exception as e:
