@@ -53,13 +53,14 @@ async def db():
 
 
 @pytest.fixture
-async def workflow(db):
+async def workflow(db, mock_prompt_store):
     model = make_mock_model([1, 2, 3, 4, 5])
     return MealPlanWorkflow(
         model,
         RecipeStore(db),
         WeeklyPlanStore(db),
         ShoppingItemStore(db),
+        mock_prompt_store,
         make_mock_vector_store([1, 2, 3, 4, 5]),
     )
 
@@ -74,7 +75,7 @@ async def test_fetch_recipe_bank_empty(workflow):
     assert workflow.recipe_bank == {}
 
 
-async def test_fetch_recipe_bank_populated(db):
+async def test_fetch_recipe_bank_populated(db, mock_prompt_store):
     recipe_store = RecipeStore(db)
     for i in range(1, 6):
         await recipe_store.create(make_recipe(name=f"Recipe {i}"))
@@ -84,6 +85,7 @@ async def test_fetch_recipe_bank_populated(db):
         recipe_store,
         WeeklyPlanStore(db),
         ShoppingItemStore(db),
+        mock_prompt_store,
         make_mock_vector_store([1, 2, 3, 4, 5]),
     )
     await wf._build_recipe_bank()
@@ -92,7 +94,7 @@ async def test_fetch_recipe_bank_populated(db):
     assert all(isinstance(r, Recipe) for r in wf.recipe_bank.values())
 
 
-async def test_fetch_recipe_bank_keys_are_ids(db):
+async def test_fetch_recipe_bank_keys_are_ids(db, mock_prompt_store):
     recipe_store = RecipeStore(db)
     id = await recipe_store.create(make_recipe(name="Soup"))
 
@@ -101,6 +103,7 @@ async def test_fetch_recipe_bank_keys_are_ids(db):
         recipe_store,
         WeeklyPlanStore(db),
         ShoppingItemStore(db),
+        mock_prompt_store,
         make_mock_vector_store([id]),
     )
     await wf._build_recipe_bank()
@@ -119,7 +122,7 @@ async def test_fetch_prev_recipe_ids_none(workflow):
     assert workflow.prev_recipe_ids == []
 
 
-async def test_fetch_prev_recipe_ids_existing_plan(db):
+async def test_fetch_prev_recipe_ids_existing_plan(db, mock_prompt_store):
     plan_store = WeeklyPlanStore(db)
     plan = WeeklyPlan(
         timestamp=utils.date.last_monday(),
@@ -134,6 +137,7 @@ async def test_fetch_prev_recipe_ids_existing_plan(db):
         RecipeStore(db),
         plan_store,
         ShoppingItemStore(db),
+        mock_prompt_store,
         make_mock_vector_store([]),
     )
     await wf._fetch_prev_recipe_ids()
@@ -146,7 +150,7 @@ async def test_fetch_prev_recipe_ids_existing_plan(db):
 # ---------------------------------------------------------------------------
 
 
-async def test_get_recommended_sets_new_recipe_ids(db):
+async def test_get_recommended_sets_new_recipe_ids(db, mock_prompt_store):
     recipe_store = RecipeStore(db)
     for i in range(1, 6):
         await recipe_store.create(make_recipe())
@@ -157,6 +161,7 @@ async def test_get_recommended_sets_new_recipe_ids(db):
         recipe_store,
         WeeklyPlanStore(db),
         ShoppingItemStore(db),
+        mock_prompt_store,
         make_mock_vector_store([1, 2, 3, 4, 5]),
     )
     await wf._build_recipe_bank()
@@ -165,7 +170,7 @@ async def test_get_recommended_sets_new_recipe_ids(db):
     assert wf.new_recipe_ids == [1, 2, 3, 4, 5]
 
 
-async def test_get_recommended_raises_on_unknown_recipe_id(db):
+async def test_get_recommended_raises_on_unknown_recipe_id(db, mock_prompt_store):
     recipe_store = RecipeStore(db)
     for i in range(1, 6):
         await recipe_store.create(make_recipe())
@@ -176,6 +181,7 @@ async def test_get_recommended_raises_on_unknown_recipe_id(db):
         recipe_store,
         WeeklyPlanStore(db),
         ShoppingItemStore(db),
+        mock_prompt_store,
         make_mock_vector_store([1, 2, 3, 4, 5]),
     )
     await wf._build_recipe_bank()
@@ -203,7 +209,7 @@ async def test_persist_weekly_plan_recipe_ids_match(workflow):
     assert workflow.new_weekly_plan.recipe_ids == [1, 2, 3, 4, 5]
 
 
-async def test_persist_aggregates_shared_ingredients(db):
+async def test_persist_aggregates_shared_ingredients(db, mock_prompt_store):
     r1 = make_recipe(ingredients=[make_ingredient("Chicken", "g", 100.0)])
     r2 = make_recipe(ingredients=[make_ingredient("Chicken", "g", 150.0)])
     recipe_store = RecipeStore(db)
@@ -215,6 +221,7 @@ async def test_persist_aggregates_shared_ingredients(db):
         recipe_store,
         WeeklyPlanStore(db),
         ShoppingItemStore(db),
+        mock_prompt_store,
         make_mock_vector_store([1, 2]),
     )
     await wf._build_recipe_bank()
@@ -228,7 +235,7 @@ async def test_persist_aggregates_shared_ingredients(db):
     assert chicken_items[0].amount == 250.0
 
 
-async def test_persist_creates_one_shopping_item_per_unique_ingredient(db):
+async def test_persist_creates_one_shopping_item_per_unique_ingredient(db, mock_prompt_store):
     r1 = make_recipe(
         ingredients=[
             make_ingredient("Chicken", "g", 100.0),
@@ -250,6 +257,7 @@ async def test_persist_creates_one_shopping_item_per_unique_ingredient(db):
         recipe_store,
         WeeklyPlanStore(db),
         ShoppingItemStore(db),
+        mock_prompt_store,
         make_mock_vector_store([1, 2]),
     )
     await wf._build_recipe_bank()
@@ -333,7 +341,7 @@ async def test_format_message_lists_shopping_items(workflow):
 # ---------------------------------------------------------------------------
 
 
-async def test_run_returns_nonempty_str(db):
+async def test_run_returns_nonempty_str(db, mock_prompt_store):
     recipe_store = RecipeStore(db)
     for i in range(1, 6):
         await recipe_store.create(make_recipe())
@@ -344,6 +352,7 @@ async def test_run_returns_nonempty_str(db):
         recipe_store,
         WeeklyPlanStore(db),
         ShoppingItemStore(db),
+        mock_prompt_store,
         make_mock_vector_store([1, 2, 3, 4, 5]),
     )
     msgs = await wf.run()
@@ -352,7 +361,7 @@ async def test_run_returns_nonempty_str(db):
     assert "Shopping List" in msgs[2]
 
 
-async def test_run_persists_weekly_plan_and_items(db):
+async def test_run_persists_weekly_plan_and_items(db, mock_prompt_store):
     recipe_store = RecipeStore(db)
     for i in range(1, 6):
         await recipe_store.create(
@@ -367,6 +376,7 @@ async def test_run_persists_weekly_plan_and_items(db):
         recipe_store,
         plan_store,
         item_store,
+        mock_prompt_store,
         make_mock_vector_store([1, 2, 3, 4, 5]),
     )
     await wf.run()
@@ -378,7 +388,7 @@ async def test_run_persists_weekly_plan_and_items(db):
     assert len(items) > 0
 
 
-async def test_run_with_no_previous_plan(db):
+async def test_run_with_no_previous_plan(db, mock_prompt_store):
     recipe_store = RecipeStore(db)
     for i in range(1, 6):
         await recipe_store.create(make_recipe())
@@ -389,6 +399,7 @@ async def test_run_with_no_previous_plan(db):
         recipe_store,
         WeeklyPlanStore(db),
         ShoppingItemStore(db),
+        mock_prompt_store,
         make_mock_vector_store([1, 2, 3, 4, 5]),
     )
     await wf._build_recipe_bank()

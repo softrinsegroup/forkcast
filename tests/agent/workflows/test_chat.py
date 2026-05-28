@@ -9,8 +9,8 @@ from agent.workflows.chat import ChatWorkflow
 
 
 @pytest.fixture
-def workflow():
-    return ChatWorkflow()
+def workflow(mock_prompt_store):
+    return ChatWorkflow(mock_prompt_store)
 
 
 # ---------------------------------------------------------------------------
