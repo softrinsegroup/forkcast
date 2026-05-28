@@ -15,7 +15,7 @@ class PromptStore:
             return None
         return self._load_prompt(dict(row))
 
-    def load_prompt(self, row: dict) -> Prompt:
+    def _load_prompt(self, row: dict) -> Prompt:
         return Prompt(
             id=row["id"],
             type=row["type"],

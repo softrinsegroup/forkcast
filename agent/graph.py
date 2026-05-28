@@ -108,7 +108,8 @@ def create_graph(
         return {"reply": reply}
 
     async def chat(state: BotState) -> BotState:
-        reply = await ChatWorkflow(prompt_store).run()
+        user_msg = state["user_message"]
+        reply = await ChatWorkflow(user_msg, model_agent, prompt_store).run()
         return {"reply": reply}
 
     # Build graph
