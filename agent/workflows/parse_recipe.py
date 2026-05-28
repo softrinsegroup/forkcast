@@ -40,7 +40,7 @@ class ParseRecipeWorkflow:
         # Parse page content with LLM
         prompt = await self.prompt_store.get(PromptType.PARSE_RECIPE)
         sys_msg = SystemMessage(
-            content=prompt,
+            content=prompt.prompt,
             additional_kwargs={"cache_control": {"type": "ephemeral"}},
         )
         human_msg = HumanMessage(content=page_content)

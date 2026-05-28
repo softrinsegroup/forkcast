@@ -61,7 +61,7 @@ class MealPlanWorkflow:
     async def _get_recommended_recipes(self) -> None:
         prompt = await self.prompt_store.get(PromptType.PLAN)
         sys_msg = SystemMessage(
-            content=prompt,
+            content=prompt.prompt,
             additional_kwargs={"cache_control": {"type": "ephemeral"}},
         )
         recipe_bank_short = {

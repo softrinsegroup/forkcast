@@ -27,7 +27,7 @@ async def classify(
         prompt = await prompt_store.get(PromptType.CLASSIFIER)
         messages = [
             SystemMessage(
-                content=prompt,
+                content=prompt.prompt,
                 additional_kwargs={"cache_control": {"type": "ephemeral"}},
             ),
             HumanMessage(content=f"Classify this message: {message}"),
