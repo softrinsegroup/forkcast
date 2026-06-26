@@ -3,7 +3,6 @@ from typing import Protocol
 
 import asyncpg
 from models import WeeklyPlan, ShoppingItem
-import utils.date
 
 
 class IWeeklyPlanStore(Protocol):
@@ -52,11 +51,8 @@ class WeeklyPlanStore:
         return await self._parse_weekly_plan(row)
 
     async def get_last_weekly_plan_recipe_ids(self) -> WeeklyPlan | None:
-        last_monday = utils.date.last_monday()
-
         row = await self.db.fetchrow(
-            "SELECT * FROM weekly_plans WHERE timestamp = $1 LIMIT 1",
-            last_monday,
+            "SELECT * FROM weekly_plans ORDER BY created_at DESC LIMIT 1",
         )
         if row is None:
             return None
