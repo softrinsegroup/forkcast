@@ -22,10 +22,11 @@ def make_tools(args):
 
     @tool
     async def get_meal_plan() -> str:
+        """TBD"""
         pass
 
     @tool
-    async def parse_recipe(
+    async def parse_recipe_url(
         url: str,
         tool_call_id: Annotated[str, InjectedToolCallId],
     ) -> Command:
@@ -39,3 +40,19 @@ def make_tools(args):
             update={"pending_recipe": recipe},
             messages=[ToolMessage(content=content, tool_call_id=tool_call_id)],
         )
+
+    @tool
+    async def get_shopping_list() -> str:
+        """Get the shopping list for the current week's meal plan."""
+        plan = await args["weekly_plan_store"].get_last_weekly_plan_recipe_ids()
+        if not plan:
+            return "No meal plan found. Ask me to create one first."
+
+        items = await args["shopping_item_store"].get_by_weekly_plan(plan.id)
+        if not items:
+            return "No shopping items found for the current plan."
+
+        lines = [
+            f"- {item.ingredient_name} {item.amount} {item.unit}" for item in items
+        ]
+        return "**Shopping List**\n" + "\n".join(lines)
