@@ -7,6 +7,7 @@ from langgraph.types import interrupt
 from langgraph.graph import StateGraph
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.constants import START, END
+from langgraph.prebuilt import ToolNode
 
 from agent.classifier import Intent, classify
 from agent.state import BotState
@@ -47,7 +48,7 @@ def create_graph(
     async def agent_node(state: BotState) -> BotState:
         """Primary agent react loop."""
         prompt = await prompt_store.get(PromptType.AGENT)
-        sys = SystemMessage(content=prompt)
+        sys = SystemMessage(content=prompt.prompt)
         resp = await model_with_tools.ainvoke([sys] + state["messages"])
         return {"messages": [resp]}
 
@@ -56,6 +57,7 @@ def create_graph(
         last = state["messages"][-1]
         if getattr(last, "tool_calls", None):
             return "tools"
+
         return END
 
     def after_tools(state: BotState) -> str:
@@ -74,16 +76,16 @@ def create_graph(
         )
         return {"user_message": user_input}
 
-    async def discard_recipe(state: BotState) -> BotState:
-        return {"reply": "Got it, I won't save the recipe."}
-
-    async def confirm_recipe_router(state: BotState) -> str:
+    async def after_confirm_recipe(state: BotState) -> str:
         user_message = state["user_message"].strip().lower()
         if user_message in ("yes", "y"):
             return "save_recipe"
 
         # User did not confirm, discard it
         return "discard_recipe"
+
+    async def discard_recipe(state: BotState) -> BotState:
+        return {"reply": "Got it, I won't save the recipe."}
 
     async def save_recipe(state: BotState) -> BotState:
         # Insert Recipe to DB
@@ -105,19 +107,23 @@ def create_graph(
 
     # Build graph
     workflow = StateGraph(BotState)
+    workflow.add_node("tools", ToolNode(tools))
+    workflow.add_node("agent", agent_node)
     workflow.add_node("confirm_recipe", confirm_recipe)
     workflow.add_node("discard_recipe", discard_recipe)
     workflow.add_node("save_recipe", save_recipe)
 
     # Add edges
-    workflow.add_edge(START, "classify_intent")
-
-    workflow.add_conditional_edges("parse_recipe", parse_recipe_router)
-    workflow.add_conditional_edges("confirm_recipe", confirm_recipe_router)
-
+    # agent → should_continue → tools (if tool_calls) or END (if plain text)
+    # tools → after_tools → confirm_recipe (if pending_recipe) or agent (loop back)
+    # confirm_recipe → after_confirm_recipe → save_recipe or discard_recipe
+    # save_recipe → END, discard_recipe → END
+    workflow.add_edge(START, "agent")
+    workflow.add_conditional_edges("agent", should_continue)
+    workflow.add_conditional_edges("tools", after_tools)
+    workflow.add_conditional_edges("confirm_recipe", after_confirm_recipe)
     workflow.add_edge("save_recipe", END)
     workflow.add_edge("discard_recipe", END)
-    workflow.add_edge("chat", END)
 
     callbacks = [langfuse_handler] if langfuse_handler else []
     return workflow.compile(checkpointer=checkpointer).with_config(
