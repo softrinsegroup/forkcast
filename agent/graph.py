@@ -54,7 +54,9 @@ def create_graph(
         if getattr(last, "tool_calls", None):
             # Check number of agent turns
             turns = sum(1 for m in state["messages"] if isinstance(m, AIMessage))
+            print(f"Current Agent turns: {turns}")
             if turns >= MAX_TURNS:
+                print("Exceeded Agent MAX_TURNS, exiting loop")
                 return END
 
             # Execute tool calls

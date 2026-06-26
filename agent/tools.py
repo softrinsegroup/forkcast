@@ -53,8 +53,10 @@ def make_tools(
         content = "\n\n".join(reply) if isinstance(reply, list) else str(reply)
 
         return Command(
-            update={"pending_recipe": recipe},
-            messages=[ToolMessage(content=content, tool_call_id=tool_call_id)],
+            update={
+                "pending_recipe": recipe,
+                "messages": [ToolMessage(content=content, tool_call_id=tool_call_id)],
+            },
         )
 
     @tool
