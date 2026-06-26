@@ -54,6 +54,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def _send_reply(update: Update, bot_reply: list[str]):
     for reply in bot_reply:
+        # Skip empty replies
+        if not reply:
+            continue
+
+        # Split the messages to readable chunks
         for chunk in _split_message(reply, limit=4096):
             try:
                 await update.message.reply_text(chunk, parse_mode="Markdown")

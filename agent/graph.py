@@ -1,5 +1,11 @@
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+    ToolMessage,
+)
 from langchain_core.vectorstores import VectorStore
 from langfuse.langchain import CallbackHandler
 from langgraph.graph.state import CompiledStateGraph
@@ -80,18 +86,35 @@ def create_graph(
         """Determines if the end state has been achieved."""
         last = state["messages"][-1]
         if getattr(last, "tool_calls", None):
-            # Check number of agent turns
-            turns = sum(1 for m in state["messages"] if isinstance(m, AIMessage))
-            print(f"Current Agent turns: {turns}")
+            # Count AI turns only since the last HumanMessage (current invocation)
+            last_human_idx = max(
+                (
+                    i
+                    for i, m in enumerate(state["messages"])
+                    if isinstance(m, HumanMessage)
+                ),
+                default=-1,
+            )
+            turns = sum(
+                1
+                for m in state["messages"][last_human_idx + 1 :]
+                if isinstance(m, AIMessage)
+            )
+            print(f"Current Agent turn: {turns}")
+
             if turns >= MAX_TURNS:
                 print("Exceeded Agent MAX_TURNS, exiting loop")
-                return END
+                return "max_turns_reached"
 
             # Execute tool calls
             return "tools"
 
         # Last message was not a tool call
         return END
+
+    async def max_turns_reached(state: BotState) -> BotState:
+        reply = "I'm having trouble completing that request. Please try again."
+        return {"messages": [AIMessage(content=reply)]}
 
     def after_tools(state: BotState) -> str:
         """Execution middleware after tool calls."""
@@ -141,6 +164,7 @@ def create_graph(
     workflow = StateGraph(BotState)
     workflow.add_node("tools", ToolNode(tools))
     workflow.add_node("agent", agent_node)
+    workflow.add_node("max_turns_reached", max_turns_reached)
     workflow.add_node("confirm_recipe", confirm_recipe)
     workflow.add_node("discard_recipe", discard_recipe)
     workflow.add_node("save_recipe", save_recipe)
@@ -154,6 +178,7 @@ def create_graph(
     workflow.add_conditional_edges("agent", should_continue)
     workflow.add_conditional_edges("tools", after_tools)
     workflow.add_conditional_edges("confirm_recipe", after_confirm_recipe)
+    workflow.add_edge("max_turns_reached", END)
     workflow.add_edge("save_recipe", END)
     workflow.add_edge("discard_recipe", END)
 
