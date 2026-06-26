@@ -80,6 +80,7 @@ def create_graph(
         sys = SystemMessage(content=prompt.prompt)
         messages = _sanitize_messages(state["messages"])
         resp = await model_with_tools.ainvoke([sys] + messages)
+        print(f"[node:agent] {resp}")
         return {"messages": [resp]}
 
     def should_continue(state: BotState) -> str:
