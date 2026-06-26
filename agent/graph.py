@@ -10,10 +10,11 @@ from langgraph.constants import START, END
 
 from agent.classifier import Intent, classify
 from agent.state import BotState
+from agent.tools import make_tools
 from agent.workflows.chat import ChatWorkflow
 from agent.workflows.meal_plan import MealPlanWorkflow
 from agent.workflows.parse_recipe import ParseRecipeWorkflow
-from models import Recipe
+from models import PromptType, Recipe
 from storage import PromptStore, RecipeStore, WeeklyPlanStore, ShoppingItemStore
 from storage import embed_recipe
 from utils import extract_url
@@ -30,8 +31,24 @@ def create_graph(
     checkpointer: BaseCheckpointSaver,
     langfuse_handler: CallbackHandler | None,
 ) -> CompiledStateGraph:
+    # Inject tools to model
+    tools = make_tools(
+        {
+            "model_agent": model_agent,
+            "recipe_store": recipe_store,
+            "weekly_plan_store": weekly_plan_store,
+            "shopping_item_store": shopping_item_store,
+            "prompt_store": prompt_store,
+            "vector_store": vector_store,
+        }
+    )
+    model_with_tools = model_agent.bind_tools(tools)
+
     async def agent_node(state: BotState) -> BotState:
-        sys = SystemMessage(content=)
+        prompt = await prompt_store.get(PromptType.AGENT)
+        sys = SystemMessage(content=prompt)
+        resp = await model_with_tools.ainvoke([sys] + state["messages"])
+        return {"messages": [resp]}
 
     def parse_recipe_router(state: BotState) -> str:
         return "confirm_recipe" if state.get("pending_recipe") else END
