@@ -3,6 +3,5 @@ from .workflows.meal_plan import (
     MealPlanWorkflow as MealPlanWorkflow,
 )
 from .workflows.parse_recipe import ParseRecipeWorkflow as ParseRecipeWorkflow
-from .workflows.chat import ChatWorkflow as ChatWorkflow
 from .state import BotState as BotState
 from .graph import create_graph as create_graph
