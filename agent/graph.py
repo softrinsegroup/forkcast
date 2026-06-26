@@ -1,5 +1,5 @@
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import AIMessage, SystemMessage
 from langchain_core.vectorstores import VectorStore
 from langfuse.langchain import CallbackHandler
 from langgraph.graph.state import CompiledStateGraph
@@ -66,7 +66,7 @@ def create_graph(
         )
         return {"user_message": user_input}
 
-    async def after_confirm_recipe(state: BotState) -> str:
+    def after_confirm_recipe(state: BotState) -> str:
         user_message = state["user_message"].strip().lower()
         if user_message in ("yes", "y"):
             return "save_recipe"
@@ -75,7 +75,8 @@ def create_graph(
         return "discard_recipe"
 
     async def discard_recipe(state: BotState) -> BotState:
-        return {"reply": "Got it, I won't save the recipe."}
+        reply = "Got it, I won't save the recipe."
+        return {"messages": [AIMessage(content=reply)], "pending_recipe": None}
 
     async def save_recipe(state: BotState) -> BotState:
         # Insert Recipe to DB
@@ -93,7 +94,7 @@ def create_graph(
             print(f"Warning: embedding failed for recipe_id={recipe_id}: {e}")
 
         reply = f"I've saved your {recipe.name} Recipe for future meal plans."
-        return {"reply": reply}
+        return {"messages": [AIMessage(content=reply)], "pending_recipe": None}
 
     # Build graph
     workflow = StateGraph(BotState)
