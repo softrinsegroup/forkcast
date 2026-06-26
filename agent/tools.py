@@ -56,3 +56,5 @@ def make_tools(args):
             f"- {item.ingredient_name} {item.amount} {item.unit}" for item in items
         ]
         return "**Shopping List**\n" + "\n".join(lines)
+
+    return [create_meal_plan, get_meal_plan, parse_recipe_url, get_shopping_list]
