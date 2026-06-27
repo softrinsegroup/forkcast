@@ -4,6 +4,7 @@ from langchain_core.messages import ToolMessage
 from langchain_core.tools import InjectedToolCallId, tool
 from langchain_core.vectorstores import VectorStore
 from langgraph.types import Command
+from pydantic import Field
 
 from agent import MealPlanWorkflow, ParseRecipeWorkflow
 from storage import PromptStore, RecipeStore, ShoppingItemStore, WeeklyPlanStore
@@ -18,7 +19,14 @@ def make_tools(
     vector_store: VectorStore,
 ):
     @tool
-    async def create_meal_plan(user_input: str) -> str:
+    async def create_meal_plan(
+        user_input: Annotated[
+            str,
+            Field(
+                description="User's meal preferences or request used to find relevant recipes"
+            ),
+        ],
+    ) -> str:
         """Generate and persist a weekly meal plan from saved recipes."""
         result = await MealPlanWorkflow(
             model_agent,
