@@ -21,14 +21,13 @@ def make_tools(
     async def create_meal_plan(user_input: str) -> str:
         """Generate and persist a weekly meal plan from saved recipes."""
         result = await MealPlanWorkflow(
-            user_input,
             model_agent,
             recipe_store,
             weekly_plan_store,
             shopping_item_store,
             prompt_store,
             vector_store,
-        ).run()
+        ).run(user_input)
         return "\n\n".join(result)
 
     @tool
