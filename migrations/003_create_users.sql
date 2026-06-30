@@ -12,4 +12,4 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Only weekly_plans is per-user; recipes are global (no user_id)
 ALTER TABLE weekly_plans 
-    ADD COLUMN user_id UUID REFERENCES users(id);
+    ADD COLUMN user_id UUID NOT NULL REFERENCES users(id);
