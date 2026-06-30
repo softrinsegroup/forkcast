@@ -40,15 +40,15 @@ async def post_init(application: Application) -> None:
     print("Initialized Anthropic clients")
 
     # Init DB
-    db = await init_db()
-    application.bot_data["db"] = db
-    recipe_store = RecipeStore(db)
+    db_pool = await init_db()
+    application.bot_data["db_pool"] = db_pool
+    recipe_store = RecipeStore(db_pool)
     application.bot_data["recipe_store"] = recipe_store
-    weekly_plan_store = WeeklyPlanStore(db)
+    weekly_plan_store = WeeklyPlanStore(db_pool)
     application.bot_data["weekly_plan_store"] = weekly_plan_store
-    shopping_item_store = ShoppingItemStore(db)
+    shopping_item_store = ShoppingItemStore(db_pool)
     application.bot_data["shopping_item_store"] = shopping_item_store
-    prompt_store = PromptStore(db)
+    prompt_store = PromptStore(db_pool)
     application.bot_data["prompt_store"] = prompt_store
     print("Initialized database")
 
@@ -98,9 +98,9 @@ async def post_init(application: Application) -> None:
 
 
 async def post_shutdown(application: Application) -> None:
-    # Close DB
-    db = application.bot_data["db"]
-    await close_db(db)
+    # Close DB Pool
+    db_pool = application.bot_data["db_pool"]
+    await close_db(db_pool)
 
     # Close Checkpointer
     exit_stack = application.bot_data.get("checkpointer_exit_stack")

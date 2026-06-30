@@ -4,12 +4,6 @@ from pathlib import Path
 from yoyo import read_migrations, get_backend
 
 
-async def init_db() -> asyncpg.connection.Connection:
-    apply_migrations()
-    conn = await asyncpg.connect(os.getenv("DATABASE_URL"))
-    return conn
-
-
 def apply_migrations() -> None:
     """Synchronously apply migrations"""
     backend = get_backend(os.getenv("DATABASE_URL"))
@@ -19,5 +13,12 @@ def apply_migrations() -> None:
             backend.apply_one(migration)
 
 
-async def close_db(db: asyncpg.connection.Connection) -> None:
+async def init_db() -> asyncpg.Pool:
+    """Initializes the DB connection pool"""
+    apply_migrations()
+    return await asyncpg.create_pool(os.getenv("DATABASE_URL"), min_size=2, max_size=10)
+
+
+async def close_db(db: asyncpg.Pool) -> None:
+    """Closes the DB connection pool"""
     await db.close()
