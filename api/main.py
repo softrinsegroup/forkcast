@@ -20,6 +20,7 @@ from storage import (
     init_vector_store,
     reconcile_recipes,
 )
+from api.users import router as users_router
 
 
 @asynccontextmanager
@@ -98,6 +99,7 @@ async def _reconcile_recipes_loop(recipe_store, vector_store):
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY"))
 app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
+app.include_router(users_router)
 
 
 @app.get("/healthcheck")
