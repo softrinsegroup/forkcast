@@ -13,3 +13,4 @@ from .vector_store import (
     embed_recipe as embed_recipe,
 )
 from .prompt_store import PromptStore as PromptStore
+from .user_store import UserStore as UserStore

@@ -15,6 +15,7 @@ from storage import (
     PromptStore,
     RecipeStore,
     ShoppingItemStore,
+    UserStore,
     WeeklyPlanStore,
     init_db,
     init_vector_store,
@@ -33,6 +34,7 @@ async def lifespan(app: FastAPI):
     weekly_plan_store = WeeklyPlanStore(db_pool)
     shopping_item_store = ShoppingItemStore(db_pool)
     prompt_store = PromptStore(db_pool)
+    user_store = UserStore(db_pool)
     print("Initialized database")
 
     # Init Vector DB
@@ -75,6 +77,7 @@ async def lifespan(app: FastAPI):
         app.state.weekly_plan_store = weekly_plan_store
         app.state.shopping_item_store = shopping_item_store
         app.state.prompt_store = prompt_store
+        app.state.user_store = user_store
         app.state.vector_store = vector_store
         app.state.graph = graph
 
