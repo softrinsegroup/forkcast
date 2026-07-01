@@ -1,5 +1,8 @@
 import os
+from dotenv import load_dotenv
 import uvicorn
+
+load_dotenv()
 
 if __name__ == "__main__":
     print("Starting Meal Prep Agent 🥞🍕🍜🤖")
