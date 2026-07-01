@@ -1,13 +1,14 @@
 import asyncio
+from contextlib import asynccontextmanager
 import os
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
-from fastapi.routing import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from langchain_anthropic import ChatAnthropic
 from langfuse.langchain import CallbackHandler
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langfuse import get_client as get_langfuse_client
+from starlette.staticfiles import StaticFiles
 
 from agent import create_graph
 from storage import (
@@ -21,6 +22,7 @@ from storage import (
 )
 
 
+@asynccontextmanager
 async def lifespan(app: FastAPI):
     # Init DB
     db_pool = await init_db()
@@ -80,10 +82,10 @@ async def lifespan(app: FastAPI):
 
         yield
 
-        # Cleanup tasks
+        # Cancel background tasks
         reconcile_task.cancel()
 
-    # Shutdown DB pool
+    # On app shutdown
     await db_pool.close()
 
 
