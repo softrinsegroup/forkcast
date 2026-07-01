@@ -3,6 +3,7 @@ from langchain_core.documents import Document
 from langchain_core.vectorstores import VectorStore
 from langchain_voyageai import VoyageAIEmbeddings
 from langchain_postgres import PGEngine, PGVectorStore
+from sqlalchemy.exc import ProgrammingError
 
 from models.domain import Recipe
 from storage.recipe_store import RecipeStore
@@ -22,11 +23,13 @@ async def init_vector_store() -> VectorStore:
 
     # Init table
     pg_engine = PGEngine.from_connection_string(url=os.getenv("ASYNC_DATABASE_URL"))
-    await pg_engine.ainit_vectorstore_table(
-        table_name=TABLE_NAME,
-        vector_size=VECTOR_SIZE,
-    )
-    print("Initialized PGEngine + table")
+    try:
+        await pg_engine.ainit_vectorstore_table(
+            table_name=TABLE_NAME, vector_size=VECTOR_SIZE
+        )
+        print("Initialized PGEngine + table")
+    except ProgrammingError:
+        pass
 
     # Init vector store
     store = await PGVectorStore.create(
