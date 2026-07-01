@@ -7,7 +7,7 @@ from langchain_postgres import PGEngine, PGVectorStore
 from models.domain import Recipe
 from storage.recipe_store import RecipeStore
 
-TABLE_NAME = "recipes"
+TABLE_NAME = "recipe_embeddings"
 VECTOR_SIZE = 1024
 
 
@@ -21,7 +21,7 @@ async def init_vector_store() -> VectorStore:
     print("Initialized embeddings")
 
     # Init table
-    pg_engine = PGEngine.from_connection_string(url=os.getenv("DATABASE_URL"))
+    pg_engine = PGEngine.from_connection_string(url=os.getenv("ASYNC_DATABASE_URL"))
     await pg_engine.ainit_vectorstore_table(
         table_name=TABLE_NAME,
         vector_size=VECTOR_SIZE,
