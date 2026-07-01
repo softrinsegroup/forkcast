@@ -5,4 +5,4 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get("/me")
 async def me():
-    pass
+    return {"user": "deric"}

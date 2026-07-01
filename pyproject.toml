@@ -23,6 +23,7 @@ dependencies = [
     "fastapi>=0.138.2",
     "langchain-postgres>=0.0.17",
     "uvicorn>=0.49.0",
+    "itsdangerous>=2.2.0",
 ]
 
 [project.optional-dependencies]

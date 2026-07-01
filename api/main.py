@@ -100,7 +100,7 @@ async def _reconcile_recipes_loop(recipe_store, vector_store):
 
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY"))
-app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
+# app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(chat_router)
@@ -113,6 +113,6 @@ async def healthcheck():
 
 # MUST BE LAST ROUTE!
 # Serves the React static page.
-@app.get("/{full_path:path}")
-async def spa_fallback():
-    return FileResponse("frontend/dist/index.html")
+# @app.get("/{full_path:path}")
+# async def spa_fallback():
+#     return FileResponse("frontend/dist/index.html")
