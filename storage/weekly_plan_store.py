@@ -1,4 +1,5 @@
 import json
+from uuid import UUID
 import asyncpg
 
 from models import WeeklyPlan, ShoppingItem
@@ -48,7 +49,7 @@ class WeeklyPlanStore:
         async with self.db_pool.acquire() as conn:
             row = await conn.fetchrow(
                 "SELECT * FROM weekly_plans WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1",
-                user_id,
+                UUID(user_id),
             )
             if row is None:
                 return None
