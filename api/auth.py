@@ -58,3 +58,9 @@ async def google_callback(request: Request, code: str, state: str):
             "name": user["name"],
         }
         return RedirectResponse("/")
+
+
+@router.get("/logout")
+async def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse("/")
