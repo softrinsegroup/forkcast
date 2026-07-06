@@ -26,6 +26,7 @@ from api.auth import router as auth_router
 from api.users import router as users_router
 from api.chat import router as chat_router
 from api.meal_plans import router as meal_plans_router
+from api.recipes import router as recipes_router
 
 
 @asynccontextmanager
@@ -109,6 +110,7 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(chat_router)
 app.include_router(meal_plans_router)
+app.include_router(recipes_router)
 
 
 @app.get("/healthcheck")
