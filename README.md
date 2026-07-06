@@ -122,6 +122,9 @@ Use `manage_prompts.py` to insert and manage prompt versions:
 # Prefix the command with your DATABASE_URL.
 # e.g. DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mealprep"
 
+# Backend (run from backend/)
+cd backend
+
 # Add a new prompt version (--active promotes it immediately)
 DATABASE_URL=<DATABASE_URL> uv run python manage_prompts.py add \
   --type classifier \
