@@ -9,32 +9,33 @@ from models import PromptType
 
 
 async def cmd_add(args) -> None:
-    db = await init_db()
+    db_pool = await init_db()
     try:
         prompt_text = Path(args.file).read_text()
-        async with db.transaction():
-            if args.active:
-                await db.execute(
-                    "UPDATE prompts SET active=false WHERE type=$1", args.type
+        async with db_pool.acquire() as conn:
+            async with conn.transaction():
+                if args.active:
+                    await conn.execute(
+                        "UPDATE prompts SET active=false WHERE type=$1", args.type
+                    )
+                prompt_id = await conn.fetchval(
+                    "INSERT INTO prompts (type, prompt, version, active, model, notes, created_at) "
+                    "VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
+                    args.type,
+                    prompt_text,
+                    args.version,
+                    args.active,
+                    args.model,
+                    args.notes,
+                    datetime.now(timezone.utc),
                 )
-            prompt_id = await db.fetchval(
-                "INSERT INTO prompts (type, prompt, version, active, model, notes, created_at) "
-                "VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
-                args.type,
-                prompt_text,
-                args.version,
-                args.active,
-                args.model,
-                args.notes,
-                datetime.now(timezone.utc),
+                if prompt_id is None:
+                    raise RuntimeError("INSERT into prompts returned no id")
+            print(
+                f"Prompt created: id={prompt_id} type={args.type} version={args.version} active={args.active}"
             )
-            if prompt_id is None:
-                raise RuntimeError("INSERT into prompts returned no id")
-        print(
-            f"Prompt created: id={prompt_id} type={args.type} version={args.version} active={args.active}"
-        )
     finally:
-        await close_db(db)
+        await close_db(db_pool)
 
 
 async def cmd_list(args) -> None:
