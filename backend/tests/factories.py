@@ -1,6 +1,11 @@
 from datetime import date, datetime
+from uuid import UUID
 
 from models import Recipe, Ingredient, WeeklyPlan, ShoppingItem
+
+# Fixed user id used across tests. The db fixtures seed a matching users row so
+# weekly_plans.user_id (NOT NULL FK to users) is satisfiable.
+TEST_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
 
 
 def make_recipe(
@@ -36,6 +41,7 @@ def make_ingredient(
 
 
 def make_weekly_plan(
+    user_id: UUID = TEST_USER_ID,
     timestamp: date = date(2026, 4, 20),
     recipe_ids: list[int] = [1, 1, 1, 1, 1],
     shopping_items: list[ShoppingItem] = [
@@ -45,6 +51,7 @@ def make_weekly_plan(
     created_at: datetime = datetime.today(),
 ) -> WeeklyPlan:
     return WeeklyPlan(
+        user_id=user_id,
         timestamp=timestamp,
         recipe_ids=recipe_ids,
         shopping_items=shopping_items,

@@ -8,8 +8,12 @@ from unittest.mock import AsyncMock, MagicMock
 from storage import init_db, close_db, RecipeStore, WeeklyPlanStore, ShoppingItemStore
 from models import Recipe, WeeklyPlan, ShoppingItem
 from agent import MealPlanWorkflow, MealPlanInput
-from tests.factories import make_ingredient, make_recipe
+from tests.factories import make_ingredient, make_recipe, TEST_USER_ID
 import utils.date
+
+# get_last_weekly_plan_recipe_ids() takes a str and wraps it in UUID(), so the
+# workflow's user_id must be a str.
+USER_ID = str(TEST_USER_ID)
 
 
 # ---------------------------------------------------------------------------
@@ -46,7 +50,13 @@ def make_mock_vector_store(recipe_ids: list[int]) -> MagicMock:
 async def db():
     conn = await init_db()
     await conn.execute(
-        "TRUNCATE recipes, weekly_plans, shopping_items, ingredients RESTART IDENTITY CASCADE"
+        "TRUNCATE users, recipes, weekly_plans, shopping_items, ingredients RESTART IDENTITY CASCADE"
+    )
+    await conn.execute(
+        "INSERT INTO users (id, email, google_sub) VALUES ($1, $2, $3)",
+        TEST_USER_ID,
+        "test@example.com",
+        "test-google-sub",
     )
     yield conn
     await close_db(conn)
@@ -56,6 +66,7 @@ async def db():
 async def workflow(db, mock_prompt_store):
     model = make_mock_model([1, 2, 3, 4, 5])
     return MealPlanWorkflow(
+        USER_ID,
         model,
         RecipeStore(db),
         WeeklyPlanStore(db),
@@ -81,6 +92,7 @@ async def test_fetch_recipe_bank_populated(db, mock_prompt_store):
         await recipe_store.create(make_recipe(name=f"Recipe {i}"))
 
     wf = MealPlanWorkflow(
+        USER_ID,
         make_mock_model([1, 2, 3, 4, 5]),
         recipe_store,
         WeeklyPlanStore(db),
@@ -99,6 +111,7 @@ async def test_fetch_recipe_bank_keys_are_ids(db, mock_prompt_store):
     id = await recipe_store.create(make_recipe(name="Soup"))
 
     wf = MealPlanWorkflow(
+        USER_ID,
         make_mock_model([id]),
         recipe_store,
         WeeklyPlanStore(db),
@@ -125,6 +138,7 @@ async def test_fetch_prev_recipe_ids_none(workflow):
 async def test_fetch_prev_recipe_ids_existing_plan(db, mock_prompt_store):
     plan_store = WeeklyPlanStore(db)
     plan = WeeklyPlan(
+        user_id=TEST_USER_ID,
         timestamp=utils.date.last_monday(),
         recipe_ids=[10, 20, 30],
         shopping_items=[],
@@ -133,6 +147,7 @@ async def test_fetch_prev_recipe_ids_existing_plan(db, mock_prompt_store):
     await plan_store.create(plan)
 
     wf = MealPlanWorkflow(
+        USER_ID,
         make_mock_model([1]),
         RecipeStore(db),
         plan_store,
@@ -157,6 +172,7 @@ async def test_get_recommended_sets_new_recipe_ids(db, mock_prompt_store):
 
     model = make_mock_model([1, 2, 3, 4, 5])
     wf = MealPlanWorkflow(
+        USER_ID,
         model,
         recipe_store,
         WeeklyPlanStore(db),
@@ -177,6 +193,7 @@ async def test_get_recommended_raises_on_unknown_recipe_id(db, mock_prompt_store
 
     model = make_mock_model([1, 2, 3, 4, 999])
     wf = MealPlanWorkflow(
+        USER_ID,
         model,
         recipe_store,
         WeeklyPlanStore(db),
@@ -217,6 +234,7 @@ async def test_persist_aggregates_shared_ingredients(db, mock_prompt_store):
     await recipe_store.create(r2)
 
     wf = MealPlanWorkflow(
+        USER_ID,
         make_mock_model([1, 2]),
         recipe_store,
         WeeklyPlanStore(db),
@@ -255,6 +273,7 @@ async def test_persist_creates_one_shopping_item_per_unique_ingredient(
     await recipe_store.create(r2)
 
     wf = MealPlanWorkflow(
+        USER_ID,
         make_mock_model([1, 2]),
         recipe_store,
         WeeklyPlanStore(db),
@@ -278,6 +297,7 @@ async def test_format_message_contains_week_header(workflow):
     workflow.recipe_bank = {1: make_recipe("Pasta", ["italian"])}
     workflow.new_recipe_ids = [1]
     workflow.new_weekly_plan = WeeklyPlan(
+        user_id=TEST_USER_ID,
         timestamp=utils.date.this_monday(),
         recipe_ids=[1],
         shopping_items=[],
@@ -299,6 +319,7 @@ async def test_format_message_lists_recipes_with_tags(workflow):
     }
     workflow.new_recipe_ids = [1, 2]
     workflow.new_weekly_plan = WeeklyPlan(
+        user_id=TEST_USER_ID,
         timestamp=utils.date.this_monday(),
         recipe_ids=[1, 2],
         shopping_items=[],
@@ -319,6 +340,7 @@ async def test_format_message_lists_shopping_items(workflow):
     workflow.recipe_bank = {1: make_recipe()}
     workflow.new_recipe_ids = [1]
     workflow.new_weekly_plan = WeeklyPlan(
+        user_id=TEST_USER_ID,
         timestamp=utils.date.this_monday(),
         recipe_ids=[1],
         shopping_items=[],
@@ -350,6 +372,7 @@ async def test_run_returns_nonempty_str(db, mock_prompt_store):
 
     model = make_mock_model([1, 2, 3, 4, 5])
     wf = MealPlanWorkflow(
+        USER_ID,
         model,
         recipe_store,
         WeeklyPlanStore(db),
@@ -374,6 +397,7 @@ async def test_run_persists_weekly_plan_and_items(db, mock_prompt_store):
     item_store = ShoppingItemStore(db)
     model = make_mock_model([1, 2, 3, 4, 5])
     wf = MealPlanWorkflow(
+        USER_ID,
         model,
         recipe_store,
         plan_store,
@@ -397,6 +421,7 @@ async def test_run_with_no_previous_plan(db, mock_prompt_store):
 
     model = make_mock_model([1, 2, 3, 4, 5])
     wf = MealPlanWorkflow(
+        USER_ID,
         model,
         recipe_store,
         WeeklyPlanStore(db),

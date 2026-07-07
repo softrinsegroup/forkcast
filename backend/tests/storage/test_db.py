@@ -6,7 +6,7 @@ from storage import init_db, close_db
 
 async def test_init_db_returns_connection():
     conn = await init_db()
-    assert isinstance(conn, asyncpg.Connection)
+    assert isinstance(conn, asyncpg.Pool)
     await close_db(conn)
 
 
@@ -23,7 +23,13 @@ async def test_migrations_create_tables():
         "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
     )
     tables = {row["table_name"] for row in rows}
-    assert {"recipes", "ingredients", "weekly_plans", "shopping_items"}.issubset(tables)
+    assert {
+        "recipes",
+        "ingredients",
+        "weekly_plans",
+        "shopping_items",
+        "users",
+    }.issubset(tables)
     await close_db(conn)
 
 
