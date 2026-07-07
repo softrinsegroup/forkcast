@@ -1,7 +1,10 @@
 from uuid import UUID
 import asyncpg
+import structlog
 
 from models import User, UserCreate
+
+log = structlog.get_logger()
 
 
 class UserStore:
@@ -21,9 +24,7 @@ class UserStore:
                 if id is None:
                     raise RuntimeError("INSERT into users returned no rowid")
 
-                print(
-                    f"User created: id={id} name={data.name} email={data.email} google_sub={data.google_sub}"
-                )
+                log.info("user_created", user_id=id, name=data.name, email=data.email)
 
                 return id
 

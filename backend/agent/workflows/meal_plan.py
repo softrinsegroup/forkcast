@@ -4,10 +4,13 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.vectorstores import VectorStore
 from pydantic import BaseModel, Field
+import structlog
 
 from models import Recipe, ShoppingItem, WeeklyPlan, PromptType
 from storage import PromptStore, RecipeStore, WeeklyPlanStore, ShoppingItemStore
 import utils.date
+
+log = structlog.get_logger()
 
 
 class MealPlanInput(BaseModel):
@@ -82,7 +85,7 @@ class MealPlanWorkflow:
                 ]
             )
         )
-        print("Picked recipe_ids:", resp.recipe_ids)
+        log.info("meal_plan_recipes_picked", recipe_ids=resp.recipe_ids)
 
         # Raise exception if picked a non-existent recipe_id
         missing_recipe_ids = [

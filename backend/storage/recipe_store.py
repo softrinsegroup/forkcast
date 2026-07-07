@@ -1,7 +1,10 @@
 import json
 import asyncpg
+import structlog
 
 from models import Ingredient, Recipe
+
+log = structlog.get_logger()
 
 
 class RecipeStore:
@@ -36,7 +39,7 @@ class RecipeStore:
                         ingredient.amount,
                     )
 
-                print(f"Recipe created: id={recipe_id} name={recipe.name}")
+                log.info("recipe_created", recipe_id=recipe_id, name=recipe.name)
 
                 return recipe_id
 

@@ -1,8 +1,11 @@
 import json
 from uuid import UUID
 import asyncpg
+import structlog
 
 from models import WeeklyPlan, ShoppingItem
+
+log = structlog.get_logger()
 
 
 class WeeklyPlanStore:
@@ -34,7 +37,11 @@ class WeeklyPlanStore:
                         item.amount,
                     )
 
-                print(f"WeeklyPlan created: timestamp={plan.timestamp.isoformat()}")
+                log.info(
+                    "weekly_plan_created",
+                    weekly_plan_id=weekly_plan_id,
+                    timestamp=plan.timestamp.isoformat(),
+                )
 
                 return weekly_plan_id
 

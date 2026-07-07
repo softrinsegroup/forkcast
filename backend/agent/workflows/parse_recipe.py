@@ -3,10 +3,13 @@ import httpx
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field, ValidationError
+import structlog
 
 from models import Recipe, Ingredient, PromptType
 from storage import PromptStore
 from utils import web_fetch, backup_web_fetch
+
+log = structlog.get_logger()
 
 
 class ParseRecipeInput(BaseModel):
@@ -101,13 +104,13 @@ class ParseRecipeWorkflow:
     async def run(self) -> tuple[list[str], Recipe | None]:
         try:
             # Try primary web fetch
-            print("[ParseRecipeWorkflow] Primary Web Fetch")
+            log.info("recipe_fetch", source="primary", url=self.url)
             page_content = await web_fetch(self.url)
             await self._parse_page_content(page_content)
 
             # Use secondary web fetch if unable to parse
             if not self.recipe:
-                print("[ParseRecipeWorkflow] Secondary Web Fetch")
+                log.info("recipe_fetch", source="secondary", url=self.url)
                 page_content = await backup_web_fetch(self.url)
                 await self._parse_page_content(page_content)
 
@@ -115,16 +118,16 @@ class ParseRecipeWorkflow:
             if not self.recipe:
                 raise ValidationError("Primary/secondary web fetch failed.")
         except ValidationError as e:
-            print(f"[ParseRecipeWorkflow] ValidationError: {e}")
+            log.warning("recipe_parse_failed", reason="validation", url=self.url, error=str(e))
             return f"Couldn't parse recipe from {self.url}: {e}", None
         except ValueError as e:
-            print(f"[ParseRecipeWorkflow] ValueError: {e}")
+            log.warning("recipe_parse_failed", reason="llm_call", url=self.url, error=str(e))
             return f"Error with LLM call: {e}", None
         except httpx.ConnectError as e:
-            print(f"[ParseRecipeWorkflow] httpx.ConnectError: {e}")
+            log.warning("recipe_parse_failed", reason="connect", url=self.url, error=str(e))
             return f"Error fetching recipe: {e}", None
         except Exception as e:
-            print(f"[ParseRecipeWorkflow] Exception: {e}")
+            log.exception("recipe_parse_failed", reason="unexpected", url=self.url)
             return f"Unexpected error: {e}", None
 
         return self._format_message(), self.recipe

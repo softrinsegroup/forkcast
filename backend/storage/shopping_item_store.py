@@ -1,6 +1,9 @@
 import asyncpg
+import structlog
 
 from models import ShoppingItem
+
+log = structlog.get_logger()
 
 
 class ShoppingItemStore:
@@ -22,8 +25,11 @@ class ShoppingItemStore:
                 if shopping_item_id is None:
                     raise RuntimeError("INSERT into shopping_items returned no rowid")
 
-                print(
-                    f"ShoppingItem created: weekly_plan_id={item.weekly_plan_id} ingredient_name={item.ingredient_name}"
+                log.info(
+                    "shopping_item_created",
+                    shopping_item_id=shopping_item_id,
+                    weekly_plan_id=item.weekly_plan_id,
+                    ingredient_name=item.ingredient_name,
                 )
 
                 return shopping_item_id

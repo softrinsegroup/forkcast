@@ -8,6 +8,7 @@ from langchain_core.messages import (
 )
 from langchain_core.vectorstores import VectorStore
 from langfuse.langchain import CallbackHandler
+import structlog
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import interrupt
 from langgraph.graph import StateGraph
@@ -21,6 +22,8 @@ from models import PromptType, Recipe
 from storage import PromptStore, RecipeStore, WeeklyPlanStore, ShoppingItemStore
 from storage import embed_recipe
 
+
+log = structlog.get_logger()
 
 # Max number of Agent turns
 MAX_TURNS = 10
@@ -80,7 +83,7 @@ def create_graph(
         sys = SystemMessage(content=prompt.prompt)
         messages = _sanitize_messages(state["messages"])
         resp = await model_with_tools.ainvoke([sys] + messages)
-        print(f"[node:agent] {resp}")
+        log.info("agent_response", response=str(resp))
         return {"messages": [resp]}
 
     def should_continue(state: BotState) -> str:
@@ -101,10 +104,10 @@ def create_graph(
                 for m in state["messages"][last_human_idx + 1 :]
                 if isinstance(m, AIMessage)
             )
-            print(f"Current Agent turn: {turns}")
+            log.info("agent_turn", turns=turns)
 
             if turns >= MAX_TURNS:
-                print("Exceeded Agent MAX_TURNS, exiting loop")
+                log.warning("agent_max_turns_exceeded", max_turns=MAX_TURNS)
                 return "max_turns_reached"
 
             # Execute tool calls
@@ -120,7 +123,7 @@ def create_graph(
     async def tools_node(state: BotState):
         last = state["messages"][-1]
         for tc in getattr(last, "tool_calls", []):
-            print(f"[node:tools] Calling {tc['name']} args={tc['args']}")
+            log.info("tool_call", tool=tc["name"], args=tc["args"])
         return await tool_node.ainvoke(state)
 
     def after_tools(state: BotState) -> str:
@@ -162,7 +165,7 @@ def create_graph(
             await recipe_store.update_embedded([recipe_id])
         except Exception as e:
             # Swallow exception, reconciliation will try to embed later
-            print(f"Warning: embedding failed for recipe_id={recipe_id}: {e}")
+            log.warning("recipe_embed_failed", recipe_id=recipe_id, error=str(e))
 
         reply = f"I've saved your {recipe.name} Recipe for future meal plans."
         return {"messages": [AIMessage(content=reply)], "pending_recipe": None}

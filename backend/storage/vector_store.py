@@ -4,9 +4,12 @@ from langchain_core.vectorstores import VectorStore
 from langchain_voyageai import VoyageAIEmbeddings
 from langchain_postgres import PGEngine, PGVectorStore
 from sqlalchemy.exc import ProgrammingError
+import structlog
 
 from models.domain import Recipe
 from storage.recipe_store import RecipeStore
+
+log = structlog.get_logger()
 
 TABLE_NAME = "recipe_embeddings"
 VECTOR_SIZE = 1024
@@ -19,7 +22,7 @@ async def init_vector_store() -> VectorStore:
         voyage_api_key=os.getenv("VOYAGE_API_KEY"),
         model="voyage-4",
     )
-    print("Initialized embeddings")
+    log.info("vector_store_init", step="embeddings")
 
     # Init table
     pg_engine = PGEngine.from_connection_string(url=os.getenv("ASYNC_DATABASE_URL"))
@@ -27,7 +30,7 @@ async def init_vector_store() -> VectorStore:
         await pg_engine.ainit_vectorstore_table(
             table_name=TABLE_NAME, vector_size=VECTOR_SIZE
         )
-        print("Initialized PGEngine + table")
+        log.info("vector_store_init", step="engine_table", table=TABLE_NAME)
     except ProgrammingError:
         pass
 
@@ -37,7 +40,7 @@ async def init_vector_store() -> VectorStore:
         table_name=TABLE_NAME,
         embedding_service=embeddings,
     )
-    print("Initialized PGVectorStore")
+    log.info("vector_store_init", step="store")
 
     return store
 
@@ -45,7 +48,7 @@ async def init_vector_store() -> VectorStore:
 async def reconcile_recipes(recipe_store: RecipeStore, vector_store: VectorStore):
     # Fetch all unembedded Recipes
     recipes = await recipe_store.get_all_unembedded()
-    print(f"Reconciling {len(recipes)} unembedded Recipe(s)...")
+    log.info("recipe_reconcile_start", count=len(recipes))
 
     # Embed each unembedded Recipe and track ids
     embedded_ids = []
@@ -54,7 +57,7 @@ async def reconcile_recipes(recipe_store: RecipeStore, vector_store: VectorStore
             await embed_recipe(vector_store, recipe)
             embedded_ids.append(recipe.id)
         except Exception as e:
-            print(f"Warning: failed to embed recipe_id={recipe.id}: {e}")
+            log.warning("recipe_embed_failed", recipe_id=recipe.id, error=str(e))
 
     # Update DB flags
     if embedded_ids:
@@ -64,7 +67,7 @@ async def reconcile_recipes(recipe_store: RecipeStore, vector_store: VectorStore
 async def embed_recipe(vector_store: VectorStore, recipe: Recipe) -> None:
     doc = _build_recipe_document(recipe)
     ids = await vector_store.aadd_documents([doc])
-    print(f"Embedded recipe_id {recipe.id} => document_ids {ids}")
+    log.info("recipe_embedded", recipe_id=recipe.id, document_ids=ids)
 
 
 def _build_recipe_document(recipe: Recipe) -> Document:

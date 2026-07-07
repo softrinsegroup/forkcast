@@ -1,6 +1,9 @@
 import asyncpg
+import structlog
 
 from models.domain import Ingredient
+
+log = structlog.get_logger()
 
 
 class IngredientStore:
@@ -22,8 +25,11 @@ class IngredientStore:
                 if ingredient_id is None:
                     raise RuntimeError("INSERT into ingredients returned no rowid")
 
-                print(
-                    f"Ingredient created: recipe_id={recipe_id} id={ingredient_id} name={ingredient.name}"
+                log.info(
+                    "ingredient_created",
+                    ingredient_id=ingredient_id,
+                    recipe_id=recipe_id,
+                    name=ingredient.name,
                 )
 
                 return ingredient_id

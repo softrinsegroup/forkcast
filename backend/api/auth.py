@@ -4,9 +4,12 @@ from urllib.parse import urlencode
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.routing import RedirectResponse
 import httpx
+import structlog
 
 from models import UserCreate
 from storage import UserStore
+
+log = structlog.get_logger()
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -78,7 +81,7 @@ async def google_callback(request: Request, code: str, state: str):
 
         # Store user_id in session
         request.session["user_id"] = str(user_id)
-        print(f"User logged in: {user_id}")
+        log.info("user_logged_in", user_id=str(user_id))
 
         return RedirectResponse("/")
 
