@@ -1,6 +1,7 @@
 import asyncio
 from contextlib import asynccontextmanager
 import os
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from starlette.middleware.sessions import SessionMiddleware
@@ -24,6 +25,8 @@ from storage import (
 from api.auth import router as auth_router
 from api.users import router as users_router
 from api.chat import router as chat_router
+from api.meal_plans import router as meal_plans_router
+from api.recipes import router as recipes_router
 
 
 @asynccontextmanager
@@ -103,10 +106,11 @@ async def _reconcile_recipes_loop(recipe_store, vector_store):
 
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY"))
-# app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(chat_router)
+app.include_router(meal_plans_router)
+app.include_router(recipes_router)
 
 
 @app.get("/healthcheck")
@@ -114,8 +118,18 @@ async def healthcheck():
     return {"status": "ok"}
 
 
-# MUST BE LAST ROUTE!
-# Serves the React static page.
-# @app.get("/{full_path:path}")
-# async def spa_fallback():
-#     return FileResponse("frontend/dist/index.html")
+# Serve the built React SPA when present (production). In dev the frontend is
+# served by Vite and frontend/dist won't exist, so this block is skipped.
+# backend/api/main.py -> parents[2] is the repo root; frontend/ is its sibling.
+_frontend_dist = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+if _frontend_dist.exists():
+    app.mount(
+        "/assets",
+        StaticFiles(directory=_frontend_dist / "assets"),
+        name="assets",
+    )
+
+    # MUST BE LAST ROUTE! Returns index.html for client-side routes.
+    @app.get("/{full_path:path}")
+    async def spa_fallback(full_path: str):
+        return FileResponse(_frontend_dist / "index.html")

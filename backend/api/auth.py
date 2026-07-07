@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.routing import RedirectResponse
 import httpx
 
-from models import User, UserCreate
+from models import UserCreate
 from storage import UserStore
 
 router = APIRouter(prefix="/auth", tags=["auth"])

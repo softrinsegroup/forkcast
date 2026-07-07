@@ -1,0 +1,17 @@
+# Build fresh inside the image; never copy local artifacts or secrets.
+**/node_modules
+**/dist
+**/.venv
+.git
+.gitignore
+.github
+**/__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.vscode
+.env
+.env.*
+*.log
+Dockerfile
+.dockerignore

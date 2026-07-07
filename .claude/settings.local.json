@@ -8,7 +8,8 @@
       "Bash(.venv/bin/pytest *)",
       "Bash(find *)",
       "Bash(source *)",
-      "WebFetch(*)"
+      "WebFetch(*)",
+      "Grep(*)"
     ]
   }
 }

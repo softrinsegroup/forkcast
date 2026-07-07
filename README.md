@@ -8,11 +8,20 @@ Use a Telegram Bot to interact with the Agent.
 
 ## Commands
 
+The backend lives in `backend/` and the React frontend in `frontend/`. Run all
+`uv` commands from `backend/`.
+
 ```bash
+# Backend (run from backend/)
+cd backend
+
 # Install dependencies
 uv sync
 
-# Run the bot
+# Run the backend + frontend together for local dev (open http://localhost:5173)
+uv run python scripts/dev.py
+
+# Run the backend only
 uv run python main.py
 
 # Run all tests
@@ -26,24 +35,34 @@ uv run ruff check .
 uv run ruff format .
 ```
 
+```bash
+# Frontend (run from frontend/)
+cd frontend
+npm install       # first-time setup
+npm run dev       # dev server (proxies API to :8000)
+npm run build     # production build -> frontend/dist
+```
+
+## Frontend
+
+The React frontend is served differently in development and production.
+
+**Development — Vite dev server.** Run `uv run python scripts/dev.py` (from `backend/`)
+to start the FastAPI backend on `:8000` and the Vite dev server on `:5173`. Vite proxies
+the API routes (`/auth`, `/users`, `/chat`, `/meal-plans`, `/recipes`, `/healthcheck`) to
+the backend so the session cookie and Google OAuth redirect work same-origin. Open
+http://localhost:5173 — you get hot module reload for frontend changes.
+
+**Production — Docker single process.** The multi-stage `Dockerfile` builds the SPA with
+`npm run build` (stage 1) into `frontend/dist`, then copies it as a sibling of `backend/`
+into the Python image (stage 2). At runtime the FastAPI backend serves both the API and the
+built static assets from a single process on `:8000` — there is no separate frontend server.
+
 ## Environment
 
-Create a `.env` file at root. See `.env.example`.
+Create an `.env` file in `/backend/.env`. See `.env.example` for details of required/optional environment variables.
 
-- `ANTHROPIC_API_KEY`
-- `CHROMA_HOST`
-- `CHROMA_PORT`
-- `DATABASE_URL`
-- `TELEGRAM_BOT_TOKEN`
-- `VOYAGE_API_KEY`
-
-**Optional — Langfuse observability (omit to disable tracing):**
-
-- `LANGFUSE_HOST` (defaults to `https://cloud.langfuse.com`)
-- `LANGFUSE_PUBLIC_KEY`
-- `LANGFUSE_SECRET_KEY`
-
-**Create a `.env.test` file at root for a separated test environment.**
+*Create a `.env.test` file in `/backend/.env.test for a separated test environment.*
 
 ## Database Setup
 
@@ -104,6 +123,9 @@ Use `manage_prompts.py` to insert and manage prompt versions:
 ```bash
 # Prefix the command with your DATABASE_URL.
 # e.g. DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mealprep"
+
+# Backend (run from backend/)
+cd backend
 
 # Add a new prompt version (--active promotes it immediately)
 DATABASE_URL=<DATABASE_URL> uv run python manage_prompts.py add \
@@ -215,10 +237,6 @@ Langfuse traces every LangGraph invocation when credentials are present. If the 
 - Offline eval harness: given a fixed recipe bank + user message, assert the selected meals satisfy constraints (variety, calorie targets, user preferences)
 - Classification accuracy tracking: log `(input, predicted_intent, ground_truth)` triples and run a nightly eval job
 - LLM-as-judge: use Claude to score meal plan quality across dimensions like balance and variety
-
-### Multi-modal
-
-- Accept food photos via Telegram; use Claude's vision input to parse a recipe from a photo or menu screenshot
 
 ### Human Feedback Loop
 

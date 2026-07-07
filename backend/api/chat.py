@@ -11,6 +11,21 @@ from models import User
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 
+def _chunk_text(content) -> str:
+    """Extract streamed text from an AIMessageChunk's content.
+
+    With tools bound, ChatAnthropic returns content as a list of block dicts
+    (text and tool_use) rather than a plain string; concatenate the text ones.
+    """
+    if isinstance(content, str):
+        return content
+    return "".join(
+        block.get("text", "")
+        for block in content
+        if isinstance(block, dict) and block.get("type") == "text"
+    )
+
+
 @router.get("/stream")
 async def chat_stream(
     request: Request, message: str, user: User = Depends(get_current_user)
@@ -37,9 +52,9 @@ async def chat_stream(
                 invocation, config=config, version="v2"
             ):
                 if event["event"] == "on_chat_model_stream":
-                    chunk = event["data"]["chunk"].content
-                    if chunk:
-                        yield f"data: {json.dumps({'type': 'token', 'content': chunk})}\n\n"
+                    text = _chunk_text(event["data"]["chunk"].content)
+                    if text:
+                        yield f"data: {json.dumps({'type': 'token', 'content': text})}\n\n"
 
             new_snapshot = await graph.aget_state(config)
             for task in new_snapshot.tasks:

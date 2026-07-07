@@ -1,0 +1,22 @@
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import path from "node:path";
+
+// Backend routes are proxied to FastAPI (:8000) so the session cookie and the
+// Google OAuth redirect-to-"/" both work same-origin during development.
+const backend = "http://localhost:8000";
+const proxied = ["/auth", "/users", "/chat", "/meal-plans", "/recipes", "/healthcheck"];
+
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: { "@": path.resolve(__dirname, "./src") },
+  },
+  server: {
+    port: 5173,
+    proxy: Object.fromEntries(
+      proxied.map((p) => [p, { target: backend, changeOrigin: true }]),
+    ),
+  },
+});

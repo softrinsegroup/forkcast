@@ -19,6 +19,6 @@ async def init_db() -> asyncpg.Pool:
     return await asyncpg.create_pool(os.getenv("DATABASE_URL"), min_size=2, max_size=10)
 
 
-async def close_db(db: asyncpg.Pool) -> None:
+async def close_db(db_pool: asyncpg.Pool) -> None:
     """Closes the DB connection pool"""
-    await db.close()
+    await db_pool.close()
