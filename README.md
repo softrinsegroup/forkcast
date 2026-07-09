@@ -8,8 +8,9 @@ Use a Telegram Bot to interact with the Agent.
 
 ## Commands
 
-The backend lives in `backend/` and the React frontend in `frontend/`. Run all
-`uv` commands from `backend/`.
+### Backend Commands
+
+The backend lives in `backend/`. Run all `uv` commands from `backend/`.
 
 ```bash
 # Backend (run from backend/)
@@ -21,7 +22,7 @@ uv sync
 # Run the backend + frontend together for local dev (open http://localhost:5173)
 uv run python scripts/dev.py
 
-# Run the backend only
+# (If you want to) Run the backend only 
 uv run python main.py
 
 # Run all tests
@@ -35,6 +36,10 @@ uv run ruff check .
 uv run ruff format .
 ```
 
+### Frontend Commands
+
+The React frontend lives in `frontend/`.
+
 ```bash
 # Frontend (run from frontend/)
 cd frontend
@@ -47,11 +52,22 @@ npm run build     # production build -> frontend/dist
 
 The React frontend is served differently in development and production.
 
-**Development — Vite dev server.** Run `uv run python scripts/dev.py` (from `backend/`)
-to start the FastAPI backend on `:8000` and the Vite dev server on `:5173`. Vite proxies
-the API routes (`/auth`, `/users`, `/chat`, `/meal-plans`, `/recipes`, `/healthcheck`) to
-the backend so the session cookie and Google OAuth redirect work same-origin. Open
-http://localhost:5173 — you get hot module reload for frontend changes.
+**Development — two servers.** Run `uv run python scripts/dev.py` (from `backend/`) to start
+both at once:
+
+| Server | Port | Serves the frontend from | Rebuilds on save? |
+| --- | --- | --- | --- |
+| FastAPI backend | `:8000` | `frontend/dist` (last `npm run build`) | ❌ no |
+| Vite dev server | `:5173` | `frontend/src` (live) | ✅ hot module reload |
+
+**Open http://localhost:5173 for development.** Vite serves your source files directly and
+hot-reloads on every save, so frontend changes appear instantly — no build step. It proxies
+the API routes (`/auth`, `/users`, `/chat`, `/meal-plans`, `/recipes`, `/healthcheck`) to the
+backend on `:8000`, so the session cookie and Google OAuth redirect work same-origin.
+
+> ⚠️ **DO NOT** open http://localhost:8000 during development. The backend only serves the
+> static assets from `frontend/dist`, which is whatever `npm run build` produced last — so it
+> shows stale UI until you rebuild manually. Use `:5173` and you never need `npm run build`.
 
 **Production — Docker single process.** The multi-stage `Dockerfile` builds the SPA with
 `npm run build` (stage 1) into `frontend/dist`, then copies it as a sibling of `backend/`
