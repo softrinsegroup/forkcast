@@ -1,14 +1,58 @@
-import { ShoppingCart } from "lucide-react";
+import { useState } from "react";
+import { Check, Copy, ShoppingCart } from "lucide-react";
 import type { ShoppingItem } from "@/lib/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+function formatChecklist(items: ShoppingItem[]): string {
+  return items
+    .map((item) =>
+      `- [ ] ${[item.amount, item.unit, item.ingredient_name]
+        .filter((part) => part !== "" && part != null)
+        .join(" ")}`
+    )
+    .join("\n");
+}
 
 export function ShoppingList({ items }: { items: ShoppingItem[] }) {
+  const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
+
+  async function handleCopy() {
+    const text = formatChecklist(items);
+    try {
+      await navigator.clipboard.writeText(text);
+      setStatus("copied");
+      setTimeout(() => setStatus("idle"), 2000);
+    } catch {
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 2000);
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ShoppingCart className="size-4 text-primary" /> Shopping List
         </CardTitle>
+        <CardAction>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCopy}
+            disabled={items.length === 0}
+          >
+            {status === "copied" ? (
+              <>
+                <Check /> Copied
+              </>
+            ) : (
+              <>
+                <Copy /> {status === "error" ? "Copy failed" : "Copy"}
+              </>
+            )}
+          </Button>
+        </CardAction>
       </CardHeader>
       <CardContent>
         {items.length === 0 ? (
