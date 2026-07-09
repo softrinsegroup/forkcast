@@ -42,14 +42,13 @@ class RecipeCreate(BaseModel):
 
 class ShoppingItem(BaseModel):
     id: int
-    weekly_plan_id: int | None = None
+    weekly_plan_id: int
     ingredient_name: str
     unit: str
     amount: float
 
 
 class ShoppingItemCreate(BaseModel):
-    weekly_plan_id: int | None = None
     ingredient_name: str
     unit: str
     amount: float
