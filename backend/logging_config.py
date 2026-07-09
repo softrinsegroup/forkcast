@@ -1,4 +1,5 @@
-"""Unified logging for the backend.
+"""
+Unified logging for the backend.
 
 Everything — application code (structlog), Uvicorn, and any third-party library
 that uses the stdlib ``logging`` module — is rendered through a single processor
