@@ -37,14 +37,12 @@ class IngredientStore:
     async def get(self, id: int) -> Ingredient | None:
         async with self.db_pool.acquire() as conn:
             row = await conn.fetchrow("SELECT * FROM ingredients WHERE id = $1", id)
-            if row is None:
-                return None
-            return self._parse_ingredient(dict(row))
+            return self._load(dict(row)) if row is not None else None
 
     async def get_all(self) -> list[Ingredient]:
         async with self.db_pool.acquire() as conn:
             rows = await conn.fetch("SELECT * FROM ingredients")
-            return [self._parse_ingredient(dict(r)) for r in rows]
+            return [self._load(dict(r)) for r in rows]
 
     async def update(self, ingredient: Ingredient) -> None:
         async with self.db_pool.acquire() as conn:
@@ -62,7 +60,7 @@ class IngredientStore:
             async with conn.transaction():
                 await conn.execute("DELETE FROM ingredients WHERE id = $1", id)
 
-    def _parse_ingredient(self, row: dict) -> Ingredient:
+    def _load(self, row: dict) -> Ingredient:
         return Ingredient(
             id=row["id"], name=row["name"], unit=row["unit"], amount=row["amount"]
         )

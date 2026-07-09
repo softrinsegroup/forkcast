@@ -47,9 +47,7 @@ class RecipeStore:
     async def get(self, id: int) -> Recipe | None:
         async with self.db_pool.acquire() as conn:
             row = await conn.fetchrow("SELECT * FROM recipes WHERE id = $1", id)
-            if row is None:
-                return None
-            return await self._load_recipe(conn, dict(row))
+            return await self._load(conn, dict(row)) if row is not None else None
 
     async def get_by_ids(self, ids: list[int]) -> list[Recipe]:
         if not ids:
@@ -61,13 +59,13 @@ class RecipeStore:
                 f"SELECT * FROM recipes WHERE id IN ({placeholders})", *ids
             )
             # TODO: N+1 query, ok for now, refactor later
-            return [await self._load_recipe(conn, dict(r)) for r in rows]
+            return [await self._load(conn, dict(r)) for r in rows]
 
     async def get_all_unembedded(self) -> list[Recipe]:
         async with self.db_pool.acquire() as conn:
             rows = await conn.fetch("SELECT * FROM recipes WHERE embedded = false")
             # TODO: N+1 query, ok for now, refactor later
-            return [await self._load_recipe(conn, dict(row)) for row in rows]
+            return [await self._load(conn, dict(row)) for row in rows]
 
     async def update(self, recipe: Recipe) -> None:
         async with self.db_pool.acquire() as conn:
@@ -114,7 +112,7 @@ class RecipeStore:
             async with conn.transaction():
                 await conn.execute("DELETE FROM recipes WHERE id = $1", id)
 
-    async def _load_recipe(self, conn: asyncpg.Connection, row: dict) -> Recipe:
+    async def _load(self, conn: asyncpg.Connection, row: dict) -> Recipe:
         ing_rows = await conn.fetch(
             "SELECT * FROM ingredients WHERE recipe_id = $1", row["id"]
         )

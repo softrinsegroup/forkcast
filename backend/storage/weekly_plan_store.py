@@ -49,9 +49,7 @@ class WeeklyPlanStore:
     async def get(self, id: int) -> WeeklyPlan | None:
         async with self.db_pool.acquire() as conn:
             row = await conn.fetchrow("SELECT * FROM weekly_plans WHERE id = $1", id)
-            if row is None:
-                return None
-            return await self._parse_weekly_plan(conn, dict(row))
+            return await self._load(conn, dict(row)) if row is not None else None
 
     async def get_last_weekly_plan_recipe_ids(self, user_id: str) -> WeeklyPlan | None:
         async with self.db_pool.acquire() as conn:
@@ -61,7 +59,7 @@ class WeeklyPlanStore:
             )
             if row is None:
                 return None
-            return await self._parse_weekly_plan(conn, dict(row))
+            return await self._load(conn, dict(row))
 
     async def update(self, plan: WeeklyPlan) -> None:
         async with self.db_pool.acquire() as conn:
@@ -79,9 +77,7 @@ class WeeklyPlanStore:
             async with conn.transaction():
                 await conn.execute("DELETE FROM weekly_plans WHERE id = $1", id)
 
-    async def _parse_weekly_plan(
-        self, conn: asyncpg.Connection, row: dict
-    ) -> WeeklyPlan:
+    async def _load(self, conn: asyncpg.Connection, row: dict) -> WeeklyPlan:
         item_rows = await conn.fetch(
             "SELECT * FROM shopping_items WHERE weekly_plan_id = $1", row["id"]
         )

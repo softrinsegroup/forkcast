@@ -37,16 +37,14 @@ class ShoppingItemStore:
     async def get(self, id: int) -> ShoppingItem | None:
         async with self.db_pool.acquire() as conn:
             row = await conn.fetchrow("SELECT * FROM shopping_items WHERE id = $1", id)
-            if row is None:
-                return None
-            return self._parse_shopping_item(dict(row))
+            return self._load(dict(row)) if row is not None else None
 
     async def get_by_weekly_plan(self, weekly_plan_id: int) -> list[ShoppingItem]:
         async with self.db_pool.acquire() as conn:
             rows = await conn.fetch(
                 "SELECT * FROM shopping_items WHERE weekly_plan_id = $1", weekly_plan_id
             )
-            return [self._parse_shopping_item(dict(r)) for r in rows]
+            return [self._load(dict(r)) for r in rows]
 
     async def update(self, id: int, item: ShoppingItem) -> None:
         async with self.db_pool.acquire() as conn:
@@ -67,7 +65,7 @@ class ShoppingItemStore:
             async with conn.transaction():
                 await conn.execute("DELETE FROM shopping_items WHERE id = $1", id)
 
-    def _parse_shopping_item(self, row: dict) -> ShoppingItem:
+    def _load(self, row: dict) -> ShoppingItem:
         return ShoppingItem(
             id=row["id"],
             weekly_plan_id=row["weekly_plan_id"],
