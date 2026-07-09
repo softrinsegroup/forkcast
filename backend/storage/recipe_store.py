@@ -1,8 +1,9 @@
+from datetime import datetime
 import json
 import asyncpg
 import structlog
 
-from models import Ingredient, Recipe
+from models import Ingredient, Recipe, RecipeCreate
 
 log = structlog.get_logger()
 
@@ -11,25 +12,25 @@ class RecipeStore:
     def __init__(self, db_pool: asyncpg.Pool):
         self.db_pool = db_pool
 
-    async def create(self, recipe: Recipe) -> int:
+    async def create(self, data: RecipeCreate) -> int:
         async with self.db_pool.acquire() as conn:
             async with conn.transaction():
                 recipe_id = await conn.fetchval(
                     "INSERT INTO recipes (name, instructions, servings, prep_minutes, cook_minutes, tags, created_at) "
                     "VALUES ($1, $2, $3, $4, $5, $6, $7) "
                     "RETURNING id",
-                    recipe.name,
-                    json.dumps(recipe.instructions),
-                    recipe.servings,
-                    recipe.prep_minutes,
-                    recipe.cook_minutes,
-                    json.dumps(recipe.tags),
-                    recipe.created_at,
+                    data.name,
+                    json.dumps(data.instructions),
+                    data.servings,
+                    data.prep_minutes,
+                    data.cook_minutes,
+                    json.dumps(data.tags),
+                    datetime.today(),
                 )
                 if recipe_id is None:
                     raise RuntimeError("INSERT into recipes returned no rowid")
 
-                for ingredient in recipe.ingredients:
+                for ingredient in data.ingredients:
                     await conn.execute(
                         "INSERT INTO ingredients (recipe_id, name, unit, amount) "
                         "VALUES ($1, $2, $3, $4)",
@@ -39,7 +40,7 @@ class RecipeStore:
                         ingredient.amount,
                     )
 
-                log.info("recipe_created", recipe_id=recipe_id, name=recipe.name)
+                log.info("recipe_created", recipe_id=recipe_id, name=data.name)
 
                 return recipe_id
 

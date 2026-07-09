@@ -30,6 +30,16 @@ class Recipe(BaseModel):
     embedded: bool
 
 
+class RecipeCreate(BaseModel):
+    name: str
+    instructions: list[str]
+    ingredients: list[Ingredient]
+    servings: int
+    prep_minutes: int
+    cook_minutes: int
+    tags: list[str]
+
+
 class ShoppingItem(BaseModel):
     id: int | None = None
     weekly_plan_id: int | None = None

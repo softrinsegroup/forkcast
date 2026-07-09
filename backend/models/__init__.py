@@ -2,6 +2,7 @@ from .domain import (
     Ingredient as Ingredient,
     IngredientCreate as IngredientCreate,
     Recipe as Recipe,
+    RecipeCreate as RecipeCreate,
     WeeklyPlan as WeeklyPlan,
     ShoppingItem as ShoppingItem,
     User as User,
