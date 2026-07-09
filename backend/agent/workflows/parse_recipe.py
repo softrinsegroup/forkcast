@@ -1,11 +1,10 @@
-from datetime import datetime
 import httpx
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field, ValidationError
 import structlog
 
-from models import Recipe, Ingredient, PromptType
+from models import Ingredient, PromptType, RecipeCreate
 from storage import PromptStore
 from utils import web_fetch, backup_web_fetch
 
@@ -42,7 +41,7 @@ class ParseRecipeWorkflow:
         self.url = url
         self.prompt_store = prompt_store
 
-        self.recipe: Recipe | None = None
+        self.recipe: RecipeCreate | None = None
 
     async def _parse_page_content(self, page_content: str) -> None:
         # Parse page content with LLM
@@ -58,9 +57,7 @@ class ParseRecipeWorkflow:
 
         # Validate if able to parse
         if self._validate_recipe(recipe_input):
-            self.recipe = Recipe(
-                **recipe_input.model_dump(), created_at=datetime.today(), embedded=False
-            )
+            self.recipe = RecipeCreate(**recipe_input.model_dump())
 
     def _validate_recipe(self, recipe: ParseRecipeInput) -> bool:
         if recipe.ingredients == []:
@@ -106,7 +103,7 @@ class ParseRecipeWorkflow:
 
         return msgs
 
-    async def run(self) -> tuple[list[str], Recipe | None]:
+    async def run(self) -> tuple[list[str], RecipeCreate | None]:
         try:
             # Try primary web fetch
             log.info("recipe_fetch", source="primary", url=self.url)
@@ -123,13 +120,19 @@ class ParseRecipeWorkflow:
             if not self.recipe:
                 raise ValidationError("Primary/secondary web fetch failed.")
         except ValidationError as e:
-            log.warning("recipe_parse_failed", reason="validation", url=self.url, error=str(e))
+            log.warning(
+                "recipe_parse_failed", reason="validation", url=self.url, error=str(e)
+            )
             return f"Couldn't parse recipe from {self.url}: {e}", None
         except ValueError as e:
-            log.warning("recipe_parse_failed", reason="llm_call", url=self.url, error=str(e))
+            log.warning(
+                "recipe_parse_failed", reason="llm_call", url=self.url, error=str(e)
+            )
             return f"Error with LLM call: {e}", None
         except httpx.ConnectError as e:
-            log.warning("recipe_parse_failed", reason="connect", url=self.url, error=str(e))
+            log.warning(
+                "recipe_parse_failed", reason="connect", url=self.url, error=str(e)
+            )
             return f"Error fetching recipe: {e}", None
         except Exception as e:
             log.exception("recipe_parse_failed", reason="unexpected", url=self.url)

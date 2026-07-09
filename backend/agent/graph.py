@@ -18,7 +18,7 @@ from langgraph.prebuilt import ToolNode
 
 from agent.state import BotState
 from agent.tools import make_tools
-from models import PromptType, Recipe
+from models import PromptType, RecipeCreate
 from storage import PromptStore, RecipeStore, WeeklyPlanStore, ShoppingItemStore
 from storage import embed_recipe
 
@@ -154,7 +154,7 @@ def create_graph(
 
     async def save_recipe(state: BotState) -> BotState:
         # Insert Recipe to DB
-        recipe: Recipe = state["pending_recipe"]
+        recipe: RecipeCreate = state["pending_recipe"]
         recipe_id = await recipe_store.create(recipe)
         # Hydrate missing id because it hasn't be inserted to the DB
         recipe.id = recipe_id
