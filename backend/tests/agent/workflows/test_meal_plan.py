@@ -6,7 +6,7 @@ from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
 
 from storage import init_db, close_db, RecipeStore, WeeklyPlanStore, ShoppingItemStore
-from models import Recipe, WeeklyPlan, ShoppingItem
+from models import Recipe, WeeklyPlan, ShoppingItem, WeeklyPlanCreate
 from agent import MealPlanWorkflow, MealPlanInput
 from tests.factories import make_ingredient, make_recipe, TEST_USER_ID
 import utils.date
@@ -137,14 +137,13 @@ async def test_fetch_prev_recipe_ids_none(workflow):
 
 async def test_fetch_prev_recipe_ids_existing_plan(db, mock_prompt_store):
     plan_store = WeeklyPlanStore(db)
-    plan = WeeklyPlan(
+    data = WeeklyPlanCreate(
         user_id=TEST_USER_ID,
         timestamp=utils.date.last_monday(),
         recipe_ids=[10, 20, 30],
         shopping_items=[],
-        created_at=datetime(2026, 4, 20, 12, 0, 0),
     )
-    await plan_store.create(plan)
+    await plan_store.create(data)
 
     wf = MealPlanWorkflow(
         USER_ID,
@@ -227,8 +226,12 @@ async def test_persist_weekly_plan_recipe_ids_match(workflow):
 
 
 async def test_persist_aggregates_shared_ingredients(db, mock_prompt_store):
-    r1 = make_recipe(ingredients=[make_ingredient("Chicken", "g", 100.0)])
-    r2 = make_recipe(ingredients=[make_ingredient("Chicken", "g", 150.0)])
+    r1 = make_recipe(
+        ingredients=[make_ingredient(id=1, name="Chicken", unit="g", amount=100.0)]
+    )
+    r2 = make_recipe(
+        ingredients=[make_ingredient(id=2, name="Chicken", unit="g", amount=150.0)]
+    )
     recipe_store = RecipeStore(db)
     await recipe_store.create(r1)
     await recipe_store.create(r2)
@@ -258,14 +261,14 @@ async def test_persist_creates_one_shopping_item_per_unique_ingredient(
 ):
     r1 = make_recipe(
         ingredients=[
-            make_ingredient("Chicken", "g", 100.0),
-            make_ingredient("Rice", "g", 150.0),
+            make_ingredient(id=1, name="Chicken", unit="g", amount=100.0),
+            make_ingredient(id=2, name="Rice", unit="g", amount=150.0),
         ],
     )
     r2 = make_recipe(
         ingredients=[
-            make_ingredient("Broccoli", "g", 80.0),
-            make_ingredient("Garlic", "clove", 2.0),
+            make_ingredient(id=3, name="Broccoli", unit="g", amount=80.0),
+            make_ingredient(id=4, name="Garlic", unit="clove", amount=2.0),
         ],
     )
     recipe_store = RecipeStore(db)
@@ -294,9 +297,10 @@ async def test_persist_creates_one_shopping_item_per_unique_ingredient(
 
 
 async def test_format_message_contains_week_header(workflow):
-    workflow.recipe_bank = {1: make_recipe("Pasta", ["italian"])}
+    workflow.recipe_bank = {1: make_recipe(id=1, name="Pasta", tags=["italian"])}
     workflow.new_recipe_ids = [1]
     workflow.new_weekly_plan = WeeklyPlan(
+        id=1,
         user_id=TEST_USER_ID,
         timestamp=utils.date.this_monday(),
         recipe_ids=[1],
@@ -314,11 +318,12 @@ async def test_format_message_contains_week_header(workflow):
 
 async def test_format_message_lists_recipes_with_tags(workflow):
     workflow.recipe_bank = {
-        1: make_recipe("Pasta", ["italian", "easy"]),
-        2: make_recipe("Salad", ["healthy"]),
+        1: make_recipe(id=1, name="Pasta", tags=["italian", "easy"]),
+        2: make_recipe(id=2, name="Salad", tags=["healthy"]),
     }
     workflow.new_recipe_ids = [1, 2]
     workflow.new_weekly_plan = WeeklyPlan(
+        id=1,
         user_id=TEST_USER_ID,
         timestamp=utils.date.this_monday(),
         recipe_ids=[1, 2],
@@ -340,6 +345,7 @@ async def test_format_message_lists_shopping_items(workflow):
     workflow.recipe_bank = {1: make_recipe()}
     workflow.new_recipe_ids = [1]
     workflow.new_weekly_plan = WeeklyPlan(
+        id=1,
         user_id=TEST_USER_ID,
         timestamp=utils.date.this_monday(),
         recipe_ids=[1],
@@ -348,7 +354,7 @@ async def test_format_message_lists_shopping_items(workflow):
     )
     workflow.new_shopping_items = [
         ShoppingItem(
-            weekly_plan_id=1, ingredient_name="Chicken", unit="g", amount=200.0
+            id=1, weekly_plan_id=1, ingredient_name="Chicken", unit="g", amount=200.0
         )
     ]
 
@@ -390,7 +396,11 @@ async def test_run_persists_weekly_plan_and_items(db, mock_prompt_store):
     recipe_store = RecipeStore(db)
     for i in range(1, 6):
         await recipe_store.create(
-            make_recipe(ingredients=[make_ingredient(f"ing{i}", "g", 100.0)])
+            make_recipe(
+                ingredients=[
+                    make_ingredient(id=i, name=f"ing{i}", unit="g", amount=100.0)
+                ]
+            )
         )
 
     plan_store = WeeklyPlanStore(db)

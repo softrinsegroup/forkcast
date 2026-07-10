@@ -31,9 +31,7 @@ class UserStore:
     async def get(self, id: UUID) -> User | None:
         async with self.db_pool.acquire() as conn:
             row = await conn.fetchrow("SELECT * FROM users WHERE id = $1", id)
-            if row is None:
-                return None
-            return self._parse_user(dict(row))
+            return self._load(dict(row)) if row is not None else None
 
     async def get_by_google_sub(self, google_sub: str) -> User | None:
         async with self.db_pool.acquire() as conn:
@@ -42,7 +40,7 @@ class UserStore:
             )
             if row is None:
                 return None
-            return self._parse_user(dict(row))
+            return self._load(dict(row))
 
     async def update(self, user: User) -> None:
         async with self.db_pool.acquire() as conn:
@@ -60,7 +58,7 @@ class UserStore:
             async with conn.transaction():
                 await conn.execute("DELETE FROM users WHERE id = $1", id)
 
-    def _parse_user(self, row: dict) -> User:
+    def _load(self, row: dict) -> User:
         return User(
             id=row["id"],
             name=row["name"],

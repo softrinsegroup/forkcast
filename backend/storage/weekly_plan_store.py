@@ -1,9 +1,10 @@
+from datetime import datetime
 import json
 from uuid import UUID
 import asyncpg
 import structlog
 
-from models import WeeklyPlan, ShoppingItem
+from models import WeeklyPlan, ShoppingItem, WeeklyPlanCreate
 
 log = structlog.get_logger()
 
@@ -12,22 +13,22 @@ class WeeklyPlanStore:
     def __init__(self, db_pool: asyncpg.Pool):
         self.db_pool = db_pool
 
-    async def create(self, plan: WeeklyPlan) -> int:
+    async def create(self, data: WeeklyPlanCreate) -> int:
         async with self.db_pool.acquire() as conn:
             async with conn.transaction():
                 weekly_plan_id = await conn.fetchval(
                     "INSERT INTO weekly_plans (user_id, timestamp, recipe_ids, created_at) "
                     "VALUES ($1, $2, $3, $4) "
                     "RETURNING id",
-                    plan.user_id,
-                    plan.timestamp,
-                    json.dumps(plan.recipe_ids),
-                    plan.created_at,
+                    data.user_id,
+                    data.timestamp,
+                    json.dumps(data.recipe_ids),
+                    datetime.today(),
                 )
                 if weekly_plan_id is None:
                     raise RuntimeError("INSERT into weekly_plans returned no rowid")
 
-                for item in plan.shopping_items:
+                for item in data.shopping_items:
                     await conn.execute(
                         "INSERT INTO shopping_items (weekly_plan_id, ingredient_name, unit, amount) "
                         "VALUES ($1, $2, $3, $4)",
@@ -40,7 +41,7 @@ class WeeklyPlanStore:
                 log.info(
                     "weekly_plan_created",
                     weekly_plan_id=weekly_plan_id,
-                    timestamp=plan.timestamp.isoformat(),
+                    timestamp=data.timestamp.isoformat(),
                 )
 
                 return weekly_plan_id
@@ -48,9 +49,7 @@ class WeeklyPlanStore:
     async def get(self, id: int) -> WeeklyPlan | None:
         async with self.db_pool.acquire() as conn:
             row = await conn.fetchrow("SELECT * FROM weekly_plans WHERE id = $1", id)
-            if row is None:
-                return None
-            return await self._parse_weekly_plan(conn, dict(row))
+            return await self._load(conn, dict(row)) if row is not None else None
 
     async def get_last_weekly_plan_recipe_ids(self, user_id: str) -> WeeklyPlan | None:
         async with self.db_pool.acquire() as conn:
@@ -60,7 +59,7 @@ class WeeklyPlanStore:
             )
             if row is None:
                 return None
-            return await self._parse_weekly_plan(conn, dict(row))
+            return await self._load(conn, dict(row))
 
     async def update(self, plan: WeeklyPlan) -> None:
         async with self.db_pool.acquire() as conn:
@@ -78,9 +77,7 @@ class WeeklyPlanStore:
             async with conn.transaction():
                 await conn.execute("DELETE FROM weekly_plans WHERE id = $1", id)
 
-    async def _parse_weekly_plan(
-        self, conn: asyncpg.Connection, row: dict
-    ) -> WeeklyPlan:
+    async def _load(self, conn: asyncpg.Connection, row: dict) -> WeeklyPlan:
         item_rows = await conn.fetch(
             "SELECT * FROM shopping_items WHERE weekly_plan_id = $1", row["id"]
         )

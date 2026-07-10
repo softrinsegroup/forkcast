@@ -33,11 +33,12 @@ def mock_recipe_store():
 
 def test_build_recipe_document_content():
     recipe = make_recipe(
+        id=1,
         name="Chicken Rice",
         tags=["easy", "healthy"],
         ingredients=[
-            Ingredient(name="Chicken", unit="g", amount=450),
-            Ingredient(name="Rice", unit="cup", amount=2),
+            Ingredient(id=1, name="Chicken", unit="g", amount=450),
+            Ingredient(id=2, name="Rice", unit="cup", amount=2),
         ],
         prep_minutes=10,
         cook_minutes=20,

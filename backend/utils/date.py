@@ -1,10 +1,6 @@
 from datetime import date, timedelta
 
 
-def today() -> date:
-    return date.today()
-
-
 def this_monday() -> date:
     today = date.today()
     return today - timedelta(days=today.weekday())

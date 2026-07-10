@@ -1,8 +1,9 @@
+from datetime import datetime
 import json
 import asyncpg
 import structlog
 
-from models import Ingredient, Recipe
+from models import Ingredient, Recipe, RecipeCreate
 
 log = structlog.get_logger()
 
@@ -11,25 +12,25 @@ class RecipeStore:
     def __init__(self, db_pool: asyncpg.Pool):
         self.db_pool = db_pool
 
-    async def create(self, recipe: Recipe) -> int:
+    async def create(self, data: RecipeCreate) -> int:
         async with self.db_pool.acquire() as conn:
             async with conn.transaction():
                 recipe_id = await conn.fetchval(
                     "INSERT INTO recipes (name, instructions, servings, prep_minutes, cook_minutes, tags, created_at) "
                     "VALUES ($1, $2, $3, $4, $5, $6, $7) "
                     "RETURNING id",
-                    recipe.name,
-                    json.dumps(recipe.instructions),
-                    recipe.servings,
-                    recipe.prep_minutes,
-                    recipe.cook_minutes,
-                    json.dumps(recipe.tags),
-                    recipe.created_at,
+                    data.name,
+                    json.dumps(data.instructions),
+                    data.servings,
+                    data.prep_minutes,
+                    data.cook_minutes,
+                    json.dumps(data.tags),
+                    datetime.today(),
                 )
                 if recipe_id is None:
                     raise RuntimeError("INSERT into recipes returned no rowid")
 
-                for ingredient in recipe.ingredients:
+                for ingredient in data.ingredients:
                     await conn.execute(
                         "INSERT INTO ingredients (recipe_id, name, unit, amount) "
                         "VALUES ($1, $2, $3, $4)",
@@ -39,16 +40,14 @@ class RecipeStore:
                         ingredient.amount,
                     )
 
-                log.info("recipe_created", recipe_id=recipe_id, name=recipe.name)
+                log.info("recipe_created", recipe_id=recipe_id, name=data.name)
 
                 return recipe_id
 
     async def get(self, id: int) -> Recipe | None:
         async with self.db_pool.acquire() as conn:
             row = await conn.fetchrow("SELECT * FROM recipes WHERE id = $1", id)
-            if row is None:
-                return None
-            return await self._load_recipe(conn, dict(row))
+            return await self._load(conn, dict(row)) if row is not None else None
 
     async def get_by_ids(self, ids: list[int]) -> list[Recipe]:
         if not ids:
@@ -60,13 +59,13 @@ class RecipeStore:
                 f"SELECT * FROM recipes WHERE id IN ({placeholders})", *ids
             )
             # TODO: N+1 query, ok for now, refactor later
-            return [await self._load_recipe(conn, dict(r)) for r in rows]
+            return [await self._load(conn, dict(r)) for r in rows]
 
     async def get_all_unembedded(self) -> list[Recipe]:
         async with self.db_pool.acquire() as conn:
             rows = await conn.fetch("SELECT * FROM recipes WHERE embedded = false")
             # TODO: N+1 query, ok for now, refactor later
-            return [await self._load_recipe(conn, dict(row)) for row in rows]
+            return [await self._load(conn, dict(row)) for row in rows]
 
     async def update(self, recipe: Recipe) -> None:
         async with self.db_pool.acquire() as conn:
@@ -113,7 +112,7 @@ class RecipeStore:
             async with conn.transaction():
                 await conn.execute("DELETE FROM recipes WHERE id = $1", id)
 
-    async def _load_recipe(self, conn: asyncpg.Connection, row: dict) -> Recipe:
+    async def _load(self, conn: asyncpg.Connection, row: dict) -> Recipe:
         ing_rows = await conn.fetch(
             "SELECT * FROM ingredients WHERE recipe_id = $1", row["id"]
         )

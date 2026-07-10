@@ -9,13 +9,13 @@ import structlog
 from models import UserCreate
 from storage import UserStore
 
-log = structlog.get_logger()
-
-router = APIRouter(prefix="/auth", tags=["auth"])
-
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
+
+log = structlog.get_logger()
+
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.get("/google")
@@ -52,11 +52,12 @@ async def google_callback(request: Request, code: str, state: str):
                 "grant_type": "authorization_code",
             },
         )
+
         # Raise error if Google OAuth returned 4xx/5xx
         token_res.raise_for_status()
-        tokens = token_res.json()
 
         # Fetch profile
+        tokens = token_res.json()
         user_res = await client.get(
             "https://www.googleapis.com/oauth2/v3/userinfo",
             headers={"Authorization": f"Bearer {tokens['access_token']}"},

@@ -4,14 +4,21 @@ from datetime import datetime, date
 
 
 class Ingredient(BaseModel):
-    id: int | None = None
+    id: int
+    name: str
+    unit: str
+    amount: float
+
+
+class IngredientCreate(BaseModel):
+    recipe_id: int
     name: str
     unit: str
     amount: float
 
 
 class Recipe(BaseModel):
-    id: int | None = None
+    id: int
     name: str
     instructions: list[str]
     ingredients: list[Ingredient]
@@ -23,21 +30,44 @@ class Recipe(BaseModel):
     embedded: bool
 
 
+class RecipeCreate(BaseModel):
+    name: str
+    instructions: list[str]
+    ingredients: list[Ingredient]
+    servings: int
+    prep_minutes: int
+    cook_minutes: int
+    tags: list[str]
+
+
 class ShoppingItem(BaseModel):
-    id: int | None = None
-    weekly_plan_id: int | None = None
+    id: int
+    weekly_plan_id: int
+    ingredient_name: str
+    unit: str
+    amount: float
+
+
+class ShoppingItemCreate(BaseModel):
     ingredient_name: str
     unit: str
     amount: float
 
 
 class WeeklyPlan(BaseModel):
-    id: int | None = None
+    id: int
     user_id: UUID
     timestamp: date
     recipe_ids: list[int]
     shopping_items: list[ShoppingItem]
     created_at: datetime
+
+
+class WeeklyPlanCreate(BaseModel):
+    user_id: UUID
+    timestamp: date
+    recipe_ids: list[int]
+    shopping_items: list[ShoppingItemCreate]
 
 
 class User(BaseModel):

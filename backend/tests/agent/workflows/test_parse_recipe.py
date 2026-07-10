@@ -23,7 +23,7 @@ def make_mock_model(response: ParseRecipeInput) -> MagicMock:
 def make_parse_recipe_input(**overrides) -> ParseRecipeInput:
     defaults = dict(
         name="Spaghetti Bolognese",
-        ingredients=[make_ingredient("Pasta", "g", 200.0)],
+        ingredients=[make_ingredient(id=1, name="Pasta", unit="g", amount=200.0)],
         instructions=["Boil water", "Cook pasta", "Add sauce"],
         servings=4,
         prep_minutes=10,
@@ -55,10 +55,11 @@ def workflow_with_recipe(mock_prompt_store):
     from models.domain import Recipe
 
     wf.recipe = Recipe(
+        id=1,
         name="Chicken Soup",
         ingredients=[
-            Ingredient(name="Chicken", unit="g", amount=300.0),
-            Ingredient(name="Carrot", unit="piece", amount=2.0),
+            Ingredient(id=1, name="Chicken", unit="g", amount=300.0),
+            Ingredient(id=2, name="Carrot", unit="piece", amount=2.0),
         ],
         instructions=["Chop vegetables", "Simmer chicken", "Season to taste"],
         servings=4,
@@ -76,7 +77,7 @@ def workflow_with_recipe(mock_prompt_store):
 # ---------------------------------------------------------------------------
 
 
-async def test_parse_page_content_stores_recipe_with_embedded_false(mock_prompt_store):
+async def test_parse_page_content_parses_recipe(mock_prompt_store):
     # New recipes must start embedded=False
     wf = ParseRecipeWorkflow(
         make_mock_model(make_parse_recipe_input()),
@@ -84,7 +85,13 @@ async def test_parse_page_content_stores_recipe_with_embedded_false(mock_prompt_
         mock_prompt_store,
     )
     await wf._parse_page_content("page content")
-    assert wf.recipe.embedded is False
+    assert wf.recipe.name == "Spaghetti Bolognese"
+    assert wf.recipe.ingredients[0].name == "Pasta"
+    assert wf.recipe.instructions == ["Boil water", "Cook pasta", "Add sauce"]
+    assert wf.recipe.servings == 4
+    assert wf.recipe.prep_minutes == 10
+    assert wf.recipe.cook_minutes == 20
+    assert wf.recipe.tags == ["italian", "pasta"]
 
 
 # ---------------------------------------------------------------------------
