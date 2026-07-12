@@ -5,7 +5,7 @@ import uvicorn
 load_dotenv()
 
 if __name__ == "__main__":
-    print("Starting Meal Prep Agent 🥞🍕🍜🤖")
+    print("Starting Forkcast 🍴")
     reload = os.getenv("HOT_RELOAD", "false") == "true"
     # log_config=None: defer to configure_logging() in api.main so Uvicorn's
     # logs share our unified format instead of its default handlers.

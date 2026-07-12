@@ -11,7 +11,7 @@ export function LoginPage() {
           <ChefHat className="size-7 text-primary" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold">Meal Prep Agent</h1>
+          <h1 className="text-xl font-semibold">Forkcast</h1>
           <p className="mt-2 text-muted-foreground">
             Plan your week and manage recipes with your AI sous-chef.
           </p>

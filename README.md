@@ -1,4 +1,4 @@
-# Meal Prep Agent
+# Forkcast
 
 An AI Agent helping you solve one of the hardest questions out there:
 
@@ -112,7 +112,7 @@ Create an `.env` file in `/backend/.env`. See `.env.example` for details of requ
 
 ## Database Setup
 
-Meal Prep Agent requires a running PostgreSQL instance. The quickest way is Docker:
+The app requires a running PostgreSQL instance. The quickest way is Docker:
 
 ```bash
 docker run -d \
@@ -144,7 +144,7 @@ docker stop mealprep-postgres && docker rm mealprep-postgres
 
 ### Migrations
 
-Meal Prep Agent uses [yoyo](https://ollycope.com/software/yoyo/latest/) for schema migrations against Postgres. Migrations run synchronously at startup before the bot begins accepting messages. No manual step required.
+[yoyo](https://ollycope.com/software/yoyo/latest/) is used for running schema migrations against Postgres. Migrations run synchronously at startup before the bot begins accepting messages. No manual step required.
 
 To add a new migration, create `migrations/NNN-migration-name.sql`. It will be applied automatically on next startup.
 
@@ -248,7 +248,7 @@ This means graph state — including an in-progress recipe confirmation — surv
 
 ## RAG (Retrieval-Augmented Generation)
 
-Meal Prep Agent uses RAG to surface relevant recipes when building a meal plan, avoiding the need to pass your entire recipe library to Claude on every request.
+RAG is used to surface relevant recipes when building a meal plan, avoiding the need to pass your entire recipe library to Claude on every request.
 
 **How it works:**
 
