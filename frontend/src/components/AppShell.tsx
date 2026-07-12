@@ -12,7 +12,7 @@ export function AppShell({ user }: { user: User }) {
       <header className="flex items-center justify-between gap-4 border-b px-4 py-3">
         <div className="flex items-center gap-2 font-semibold">
           <ChefHat className="size-5 text-primary" />
-          Meal Prep
+          Forkcast
         </div>
         <TabsList>
           <TabsTrigger value="chat">Chat</TabsTrigger>
