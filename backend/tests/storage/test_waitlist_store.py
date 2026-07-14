@@ -4,10 +4,14 @@ from storage import WaitlistStore
 
 async def test_waitlist_create_returns_id(db):
     store = WaitlistStore(db)
-    id = await store.create(WaitlistSignupCreate(email="new@example.com", source="hero"))
+    id = await store.create(
+        WaitlistSignupCreate(email="new@example.com", source="hero")
+    )
     assert id is not None
 
-    row = await db.fetchrow("SELECT email, source FROM waitlist_signups WHERE id = $1", id)
+    row = await db.fetchrow(
+        "SELECT email, source FROM waitlist_signups WHERE id = $1", id
+    )
     assert row["email"] == "new@example.com"
     assert row["source"] == "hero"
 
