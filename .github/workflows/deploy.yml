@@ -10,7 +10,6 @@ on:
       - "v*.*.*"
   workflow_dispatch:
 
-# One deploy at a time; a newer tag supersedes an in-flight run.
 concurrency:
   group: railway-deploy
   cancel-in-progress: false
@@ -26,14 +25,10 @@ jobs:
       run:
         working-directory: backend
     env:
-      # asyncpg pool + yoyo migrations (sync driver) both read DATABASE_URL.
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mealprep
-      # vector store PGEngine reads ASYNC_DATABASE_URL.
       ASYNC_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/mealprep
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mealprep
     services:
       postgres:
-        # pgvector image — migration 001 needs the `vector` extension
-        # (citext for migration 004 ships in postgres-contrib, included here).
         image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: postgres
@@ -64,7 +59,6 @@ jobs:
           uv run ruff format --check .
 
       - name: Test (pytest)
-        # Tests self-apply migrations via init_db(); Postgres just needs to be up.
         run: uv run pytest
 
   frontend-tests:
@@ -87,7 +81,6 @@ jobs:
         run: npm ci
 
       - name: Typecheck + build
-        # `npm run build` == `tsc -b && vite build`, so this is the type gate too.
         run: npm run build
 
       - name: Test (vitest)
@@ -109,8 +102,6 @@ jobs:
         run: npm i -g @railway/cli@4
 
       - name: Deploy
-        # RAILWAY_TOKEN (a project token) authenticates the CLI non-interactively.
-        # Railway builds the root Dockerfile from the uploaded source and deploys.
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: railway up --service "${{ vars.RAILWAY_SERVICE }}" --ci
