@@ -68,7 +68,7 @@ backend on `:8000`, so calls stay same-origin locally (leave `VITE_API_BASE` uns
 > ⚠️ **DO NOT** open http://localhost:8000 during development. The backend is API-only and
 > serves no frontend — use `:5173`.
 
-**Production — two deploys, no proxy.** The SPA builds with `npm run build` and is hosted on
+**Production — two deploys.** The SPA builds with `npm run build` and is hosted on
 **Vercel** at `app.forkcast.app`; `frontend/vercel.json` just serves `index.html` for client
 routes (SPA fallback). It calls the API **directly** at `https://api.forkcast.app` — set
 `VITE_API_BASE=https://api.forkcast.app` in the Vercel project. The FastAPI backend runs on
