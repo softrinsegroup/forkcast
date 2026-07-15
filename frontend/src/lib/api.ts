@@ -3,7 +3,7 @@ import type { MealPlan, Recipe, User } from "./types";
 // Base URL for the backend API. In production the app (app.forkcast.app) calls
 // the API cross-origin at api.forkcast.app via VITE_API_BASE. In dev it is unset,
 // so calls stay relative and the Vite proxy forwards them to :8000.
-const API_BASE = import.meta.env.VITE_API_BASE ?? "";
+export const API_BASE = import.meta.env.VITE_API_BASE ?? "";
 
 // app.forkcast.app and api.forkcast.app are the same site, so the Lax session
 // cookie rides along on these credentialed requests.

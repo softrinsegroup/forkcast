@@ -5,6 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ChatView } from "@/components/chat/ChatView";
 import { MealPlanView } from "@/components/mealplan/MealPlanView";
+import { API_BASE } from "@/lib/api";
 
 export function AppShell({ user }: { user: User }) {
   return (
@@ -23,7 +24,7 @@ export function AppShell({ user }: { user: User }) {
             {user.name ?? user.email}
           </span>
           <a
-            href="/auth/logout"
+            href={`${API_BASE}/auth/logout`}
             title="Sign out"
             className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
           >

@@ -2,6 +2,7 @@ import { ChefHat } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { API_BASE } from "@/lib/api";
 
 export function LoginPage() {
   return (
@@ -18,7 +19,7 @@ export function LoginPage() {
         </div>
         {/* Full-page navigation so the OAuth redirect chain (and cookie) works. */}
         <a
-          href="/auth/google"
+          href={`${API_BASE}/auth/google`}
           className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full")}
         >
           <GoogleIcon />
