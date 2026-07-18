@@ -37,6 +37,12 @@ filterwarnings = ["ignore::DeprecationWarning:yoyo"]
 [tool.ruff]
 line-length = 88
 
+[tool.ruff.lint]
+# D213: multi-line docstring summaries start on the second line, not on the
+# opening-quotes line. (Deliberately not enabling the full D family — we don't
+# require docstrings, only that multi-line ones use this format.)
+extend-select = ["D213"]
+
 [tool.ruff.format]
 quote-style = "double"
 
