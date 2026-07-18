@@ -42,7 +42,8 @@ def same_host(url: str, root: str) -> bool:
 async def load_robots(
     fetcher: PoliteFetcher, root: str
 ) -> tuple[RobotFileParser, list[str]]:
-    """Fetch robots.txt; returns the parser and any Sitemap: directives.
+    """
+    Fetch robots.txt; returns the parser and any Sitemap: directives.
 
     A missing or unfetchable robots.txt means everything is allowed.
     """
@@ -61,7 +62,8 @@ async def sitemap_page_urls(
     sitemap_urls: list[str],
     max_pages: int,
 ) -> list[str]:
-    """Collect same-host page URLs from sitemaps, recursing into indexes.
+    """
+    Collect same-host page URLs from sitemaps, recursing into indexes.
 
     Tries robots.txt Sitemap: directives first, then the conventional paths.
     Returns [] if the site has no parseable sitemap (caller falls back to BFS).

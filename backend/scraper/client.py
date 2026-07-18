@@ -14,7 +14,8 @@ class IngestClient:
         )
 
     async def ingest(self, recipe: RecipeCreate) -> bool:
-        """POST one recipe. True if created, False if skipped as a duplicate.
+        """
+        POST one recipe. True if created, False if skipped as a duplicate.
 
         Raises httpx.HTTPError on any non-200 — the caller counts it as failed
         and moves on.

@@ -1,4 +1,5 @@
-"""Recipe scraper CLI — crawls a site and ingests recipes via the backend API.
+"""
+Recipe scraper CLI — crawls a site and ingests recipes via the backend API.
 
 Run from backend/:
 

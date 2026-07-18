@@ -91,7 +91,8 @@ def _to_number(token: str) -> float:
 
 
 def parse_ingredient(text: str, id: int = 0) -> Ingredient:
-    """Best-effort deterministic parse of a recipeIngredient string.
+    """
+    Best-effort deterministic parse of a recipeIngredient string.
 
     "2 cups flour" -> amount=2, unit="cup", name="flour". Anything we can't
     parse keeps the full raw string as the name with amount=0 — never lose

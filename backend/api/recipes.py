@@ -9,8 +9,8 @@ router = APIRouter(prefix="/recipes", tags=["recipes"])
 
 @router.post("/ingest", dependencies=[Depends(require_ingest_key)])
 async def ingest(recipe: RecipeCreate, request: Request):
-    """Machine ingest endpoint for the scraper CLI.
-
+    """
+    Machine ingest endpoint for the scraper CLI.
     Idempotent on source_url: a recipe already ingested from the same URL is
     skipped, not duplicated. Always 200 so the CLI can count skips without
     error handling. Embedding happens via the reconcile loop (embedded=false).

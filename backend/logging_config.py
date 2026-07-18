@@ -28,14 +28,17 @@ import structlog
 
 
 def _drop_color_message(logger, method_name, event_dict):
-    """Uvicorn attaches a redundant ANSI-colored copy of the message as a
-    ``color_message`` extra; drop it so it doesn't clutter our output."""
+    """
+    Uvicorn attaches a redundant ANSI-colored copy of the message as a
+    ``color_message`` extra; drop it so it doesn't clutter our output.
+    """
     event_dict.pop("color_message", None)
     return event_dict
 
 
 def configure_logging() -> None:
-    """Configure structlog and route stdlib logging through the same pipeline.
+    """
+    Configure structlog and route stdlib logging through the same pipeline.
 
     Idempotent: safe to call more than once (existing handlers are replaced).
     """

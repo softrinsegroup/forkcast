@@ -97,7 +97,8 @@ def _tags(node: dict) -> list[str]:
 
 
 def extract_recipe(html: str, source_url: str) -> RecipeCreate | None:
-    """Deterministically extract a schema.org/Recipe from a page's JSON-LD.
+    """
+    Deterministically extract a schema.org/Recipe from a page's JSON-LD.
 
     Returns None when the page has no usable Recipe node — which doubles as
     the "is this a recipe page at all?" filter during crawling.

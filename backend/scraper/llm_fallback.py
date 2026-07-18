@@ -21,7 +21,8 @@ def _looks_like_recipe(text: str) -> bool:
 
 
 class LlmFallback:
-    """LLM extraction for recipe pages without usable JSON-LD.
+    """
+    LLM extraction for recipe pages without usable JSON-LD.
 
     Capped: opt-in via --llm-fallback and hard-limited to `cap` calls per run
     so a large crawl can't silently burn through the token budget.

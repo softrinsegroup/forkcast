@@ -6,7 +6,8 @@ USER_AGENT = "forkcast-scraper/0.1"
 
 
 class PoliteFetcher:
-    """Rate-limited HTTP fetcher for crawling a single site.
+    """
+    Rate-limited HTTP fetcher for crawling a single site.
 
     Returns raw HTML — unlike utils.web_fetch, which strips markup and would
     destroy the <script type="application/ld+json"> blocks we parse.

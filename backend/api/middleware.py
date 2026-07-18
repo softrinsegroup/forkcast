@@ -1,4 +1,5 @@
-"""Request logging middleware.
+"""
+Request logging middleware.
 
 Written as raw ASGI (not Starlette's ``BaseHTTPMiddleware``) on purpose:
 ``BaseHTTPMiddleware`` runs the endpoint in a separate task, so contextvars

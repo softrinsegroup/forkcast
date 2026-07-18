@@ -1,4 +1,5 @@
-"""Run the FastAPI backend and the Vite frontend together for local development.
+"""
+Run the FastAPI backend and the Vite frontend together for local development.
 
     cd backend && uv run python scripts/dev.py
 
