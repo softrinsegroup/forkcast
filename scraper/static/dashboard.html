@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forkcast scraper</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #6b7280; --line: #e5e7eb;
+    --accent: #2563eb; --ok: #16a34a; --warn: #d97706; --err: #dc2626;
+    --panel: #f9fafb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111418; --fg: #e5e7eb; --muted: #9ca3af; --line: #2b3138;
+      --accent: #60a5fa; --ok: #4ade80; --warn: #fbbf24; --err: #f87171;
+      --panel: #1a1f26;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0 auto; padding: 1.5rem; max-width: 72rem;
+    background: var(--bg); color: var(--fg);
+    font: 14px/1.5 system-ui, -apple-system, sans-serif;
+  }
+  h1 { font-size: 1.2rem; margin: 0 0 1rem; }
+  form {
+    display: flex; flex-wrap: wrap; gap: .6rem; align-items: end;
+    padding: .8rem; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 8px; margin-bottom: 1.2rem;
+  }
+  label { display: flex; flex-direction: column; gap: .15rem; color: var(--muted); font-size: .75rem; }
+  input[type=text], input[type=number] {
+    padding: .35rem .5rem; border: 1px solid var(--line); border-radius: 5px;
+    background: var(--bg); color: var(--fg); font: inherit;
+  }
+  input[name=root_url] { width: 18rem; }
+  input[type=number] { width: 5.5rem; }
+  .check { flex-direction: row; align-items: center; gap: .3rem; padding-bottom: .45rem; }
+  button {
+    padding: .4rem .9rem; border: 0; border-radius: 5px; font: inherit;
+    background: var(--accent); color: #fff; cursor: pointer;
+  }
+  button.secondary { background: transparent; color: var(--err); border: 1px solid var(--err); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: .4rem .6rem; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; font-size: .75rem; }
+  td.num, th.num { text-align: right; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: var(--panel); }
+  tbody tr.selected { background: var(--panel); }
+  .badge {
+    padding: .1rem .5rem; border-radius: 99px; font-size: .75rem;
+    background: var(--panel); border: 1px solid var(--line);
+  }
+  .badge.running { color: var(--accent); border-color: var(--accent); }
+  .badge.done { color: var(--ok); border-color: var(--ok); }
+  .badge.failed, .badge.cancelled { color: var(--err); border-color: var(--err); }
+  .badge.pending { color: var(--warn); border-color: var(--warn); }
+  #detail {
+    margin-top: 1.2rem; padding: .8rem; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 8px;
+  }
+  #detail h2 { font-size: .95rem; margin: 0 0 .5rem; }
+  #detail .actions { display: flex; gap: .6rem; margin: .6rem 0; }
+  #failures { max-height: 18rem; overflow: auto; }
+  #failures td { white-space: normal; word-break: break-all; }
+  .err-text { color: var(--err); font-size: .8rem; }
+  .muted { color: var(--muted); }
+  .scroll { overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>Forkcast scraper</h1>
+
+<form id="new-job">
+  <label>root url <input type="text" name="root_url" placeholder="somerecipesite.com" required></label>
+  <label>max pages <input type="number" name="max_pages" value="500" min="1"></label>
+  <label>concurrency <input type="number" name="concurrency" value="2" min="1"></label>
+  <label>delay (s) <input type="number" name="delay_seconds" value="1.0" step="0.1" min="0"></label>
+  <label>llm cap <input type="number" name="llm_cap" value="20" min="0"></label>
+  <label class="check"><input type="checkbox" name="llm_fallback"> llm fallback</label>
+  <label class="check"><input type="checkbox" name="dry_run"> dry run</label>
+  <button type="submit">Start job</button>
+</form>
+
+<div class="scroll">
+<table>
+  <thead><tr>
+    <th>#</th><th>root url</th><th>status</th>
+    <th class="num">queued</th><th class="num">found</th><th class="num">ingested</th>
+    <th class="num">dup</th><th class="num">no recipe</th><th class="num">failed</th>
+    <th>created</th>
+  </tr></thead>
+  <tbody id="jobs"></tbody>
+</table>
+</div>
+
+<div id="detail" hidden></div>
+
+<script>
+let selectedId = null;
+
+const fmt = (ts) => ts ? new Date(ts).toLocaleString() : "";
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+async function api(path, opts) {
+  const resp = await fetch(path, opts);
+  if (!resp.ok) throw new Error(`${path}: ${resp.status}`);
+  return resp.json();
+}
+
+async function refreshJobs() {
+  const jobs = await api("/jobs");
+  document.getElementById("jobs").innerHTML = jobs.map(j => {
+    const c = j.counts;
+    return `<tr data-id="${j.id}" class="${j.id === selectedId ? "selected" : ""}">
+      <td>${j.id}</td>
+      <td>${esc(j.root_url)}${j.dry_run ? ' <span class="muted">(dry run)</span>' : ""}</td>
+      <td><span class="badge ${j.status}">${j.status}</span></td>
+      <td class="num">${(c.queued ?? 0) + (c.fetching ?? 0)}</td>
+      <td class="num">${c.found ?? 0}</td>
+      <td class="num">${c.ingested ?? 0}</td>
+      <td class="num">${c.duplicate ?? 0}</td>
+      <td class="num">${c.no_recipe ?? 0}</td>
+      <td class="num">${c.failed ?? 0}</td>
+      <td class="muted">${fmt(j.created_at)}</td>
+    </tr>`;
+  }).join("");
+}
+
+async function refreshDetail() {
+  const panel = document.getElementById("detail");
+  if (selectedId === null) { panel.hidden = true; return; }
+  const [job, failures] = await Promise.all([
+    api(`/jobs/${selectedId}`),
+    api(`/jobs/${selectedId}/pages?status=failed&limit=50`),
+  ]);
+  const active = job.status === "pending" || job.status === "running";
+  panel.hidden = false;
+  panel.innerHTML = `
+    <h2>Job ${job.id} — ${esc(job.root_url)} <span class="badge ${job.status}">${job.status}</span></h2>
+    <div class="muted">
+      ${job.bfs ? "BFS crawl" : "sitemap"} · max ${job.max_pages} pages ·
+      llm ${job.llm_fallback ? `${job.llm_used}/${job.llm_cap} used` : "off"} ·
+      started ${fmt(job.started_at) || "—"} · finished ${fmt(job.finished_at) || "—"}
+      ${job.error ? ` · <span class="err-text">${esc(job.error)}</span>` : ""}
+    </div>
+    <div class="actions">
+      ${active ? `<button class="secondary" onclick="cancelJob()">Cancel</button>` : ""}
+      ${!active && (job.counts.failed || job.counts.skipped) ?
+        `<button onclick="retryFailed()">Retry failed/skipped</button>` : ""}
+    </div>
+    ${failures.length ? `<div id="failures"><table>
+      <thead><tr><th>failed url</th><th>error</th></tr></thead>
+      <tbody>${failures.map(p => `<tr>
+        <td>${esc(p.url)}</td><td class="err-text">${esc(p.error)}</td>
+      </tr>`).join("")}</tbody>
+    </table></div>` : ""}`;
+}
+
+async function refresh() {
+  try { await Promise.all([refreshJobs(), refreshDetail()]); }
+  catch (e) { console.log("refresh failed:", e); }
+}
+
+document.getElementById("jobs").addEventListener("click", (e) => {
+  const row = e.target.closest("tr[data-id]");
+  if (!row) return;
+  const id = Number(row.dataset.id);
+  selectedId = selectedId === id ? null : id;
+  refresh();
+});
+
+document.getElementById("new-job").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  await api("/jobs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      root_url: f.root_url.value,
+      max_pages: Number(f.max_pages.value),
+      concurrency: Number(f.concurrency.value),
+      delay_seconds: Number(f.delay_seconds.value),
+      llm_fallback: f.llm_fallback.checked,
+      llm_cap: Number(f.llm_cap.value),
+      dry_run: f.dry_run.checked,
+    }),
+  });
+  f.root_url.value = "";
+  refresh();
+});
+
+async function cancelJob() {
+  await api(`/jobs/${selectedId}/cancel`, { method: "POST" });
+  refresh();
+}
+async function retryFailed() {
+  await api(`/jobs/${selectedId}/retry-failed`, { method: "POST" });
+  refresh();
+}
+
+refresh();
+setInterval(refresh, 4000);
+</script>
+</body>
+</html>

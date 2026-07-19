@@ -30,6 +30,53 @@ class ParseRecipeInput(BaseModel):
     tags: list[str] = Field(description="Hashtags describing the dish")
 
 
+async def parse_page_text(
+    model: BaseChatModel,
+    prompt_store: PromptStore,
+    url: str,
+    page_text: str,
+) -> RecipeCreate | None:
+    """
+    Parse recipe page text with the LLM; None if it doesn't validate.
+
+    Shared core of the chat workflow below and POST /recipes/parse — the
+    single place the PARSE_RECIPE prompt and structured-output schema are used.
+    """
+    prompt = await prompt_store.get(PromptType.PARSE_RECIPE)
+    sys_msg = SystemMessage(
+        content=prompt.prompt,
+        additional_kwargs={"cache_control": {"type": "ephemeral"}},
+    )
+    human_msg = HumanMessage(content=page_text)
+    recipe_input = await model.with_structured_output(
+        ParseRecipeInput, method="json_schema"
+    ).ainvoke([sys_msg, human_msg], config={"tags": [RECIPE_PARSE_TAG]})
+
+    if not _validate_recipe(recipe_input):
+        return None
+    return RecipeCreate(**recipe_input.model_dump(), source_url=url)
+
+
+def _validate_recipe(recipe: ParseRecipeInput) -> bool:
+    if recipe.ingredients == []:
+        return False
+    if recipe.instructions == []:
+        return False
+    if "error" in recipe.instructions[0]:
+        return False
+    if recipe.tags == []:
+        return False
+    if recipe.tags[0] == "unknown":
+        return False
+    if recipe.servings == 0:
+        return False
+    if recipe.prep_minutes == 0:
+        return False
+    if recipe.cook_minutes == 0:
+        return False
+    return True
+
+
 class ParseRecipeWorkflow:
     def __init__(
         self,
@@ -44,39 +91,9 @@ class ParseRecipeWorkflow:
         self.recipe: RecipeCreate | None = None
 
     async def _parse_page_content(self, page_content: str) -> None:
-        # Parse page content with LLM
-        prompt = await self.prompt_store.get(PromptType.PARSE_RECIPE)
-        sys_msg = SystemMessage(
-            content=prompt.prompt,
-            additional_kwargs={"cache_control": {"type": "ephemeral"}},
+        self.recipe = await parse_page_text(
+            self.model, self.prompt_store, self.url, page_content
         )
-        human_msg = HumanMessage(content=page_content)
-        recipe_input = await self.model.with_structured_output(
-            ParseRecipeInput, method="json_schema"
-        ).ainvoke([sys_msg, human_msg], config={"tags": [RECIPE_PARSE_TAG]})
-
-        # Validate if able to parse
-        if self._validate_recipe(recipe_input):
-            self.recipe = RecipeCreate(**recipe_input.model_dump(), source_url=self.url)
-
-    def _validate_recipe(self, recipe: ParseRecipeInput) -> bool:
-        if recipe.ingredients == []:
-            return False
-        if recipe.instructions == []:
-            return False
-        if "error" in recipe.instructions[0]:
-            return False
-        if recipe.tags == []:
-            return False
-        if recipe.tags[0] == "unknown":
-            return False
-        if recipe.servings == 0:
-            return False
-        if recipe.prep_minutes == 0:
-            return False
-        if recipe.cook_minutes == 0:
-            return False
-        return True
 
     def _format_message(self) -> list[str]:
         ingredients = []

@@ -26,9 +26,9 @@ async def get_current_user(request: Request):
 
 async def require_ingest_key(request: Request) -> None:
     """
-    Auth for machine clients (the scraper CLI) via static bearer token.
-    Session cookies don't work outside a browser, so /recipes/ingest uses
-    `Authorization: Bearer <INGEST_API_KEY>` instead.
+    Auth for machine clients (the scraper service) via static bearer token.
+    Session cookies don't work outside a browser, so /recipes/ingest and
+    /recipes/parse use `Authorization: Bearer <INGEST_API_KEY>` instead.
     """
     api_key = os.getenv("INGEST_API_KEY")
     if not api_key:

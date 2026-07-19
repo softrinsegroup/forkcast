@@ -7,7 +7,7 @@ from urllib.robotparser import RobotFileParser
 import httpx
 from bs4 import BeautifulSoup
 
-from scraper.fetch import PoliteFetcher
+from fetch import PoliteFetcher
 
 # Obvious non-HTML links to skip during BFS crawling.
 _SKIP_EXTENSIONS = (

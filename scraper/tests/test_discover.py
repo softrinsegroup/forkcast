@@ -2,8 +2,8 @@ from pathlib import Path
 
 import httpx
 
-from scraper.discover import extract_links, load_robots, sitemap_page_urls
-from scraper.fetch import USER_AGENT
+from discover import extract_links, load_robots, sitemap_page_urls
+from fetch import USER_AGENT
 
 FIXTURES = Path(__file__).parent / "fixtures"
 ROOT = "https://example.com"

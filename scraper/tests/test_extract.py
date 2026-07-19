@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from scraper.extract import _duration_minutes, extract_recipe
+from extract import _duration_minutes, extract_recipe
 
 FIXTURES = Path(__file__).parent / "fixtures"
 URL = "https://example.com/recipes/test"

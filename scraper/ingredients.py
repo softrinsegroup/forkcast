@@ -3,7 +3,7 @@ import re
 from models import Ingredient
 
 # Canonical units keyed by every spelling we accept. Values match the units
-# the LLM parse path produces (see prompts/parse_recipe_v1.txt).
+# the backend's LLM parse path produces.
 _UNIT_ALIASES = {
     "cup": "cup",
     "cups": "cup",

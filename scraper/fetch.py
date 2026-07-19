@@ -9,8 +9,8 @@ class PoliteFetcher:
     """
     Rate-limited HTTP fetcher for crawling a single site.
 
-    Returns raw HTML — unlike utils.web_fetch, which strips markup and would
-    destroy the <script type="application/ld+json"> blocks we parse.
+    Returns raw HTML — unlike the backend's web_fetch, which strips markup
+    and would destroy the <script type="application/ld+json"> blocks we parse.
     """
 
     def __init__(self, concurrency: int = 2, delay: float = 1.0):

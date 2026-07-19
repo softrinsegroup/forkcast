@@ -85,6 +85,7 @@ async def lifespan(app: FastAPI):
         )
 
         # Store on app.state so routers can access via request.app.state
+        app.state.model_agent = model_agent
         app.state.recipe_store = recipe_store
         app.state.weekly_plan_store = weekly_plan_store
         app.state.shopping_item_store = shopping_item_store

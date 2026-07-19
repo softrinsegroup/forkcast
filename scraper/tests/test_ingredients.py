@@ -1,4 +1,4 @@
-from scraper.ingredients import parse_ingredient
+from ingredients import parse_ingredient
 
 # Parsed amounts/units feed shopping-list aggregation, so the common formats
 # must land in the same canonical units the LLM parse path produces.

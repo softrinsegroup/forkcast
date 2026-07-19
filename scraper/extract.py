@@ -4,8 +4,8 @@ from typing import Any, Iterator
 
 from bs4 import BeautifulSoup
 
-from models import RecipeCreate
-from scraper.ingredients import parse_ingredient
+from ingredients import parse_ingredient
+from models import Recipe
 
 # ISO-8601 duration, e.g. "PT1H30M", "PT45M", "P1DT2H".
 _DURATION_RE = re.compile(
@@ -96,7 +96,7 @@ def _tags(node: dict) -> list[str]:
     return tags
 
 
-def extract_recipe(html: str, source_url: str) -> RecipeCreate | None:
+def extract_recipe(html: str, source_url: str) -> Recipe | None:
     """
     Deterministically extract a schema.org/Recipe from a page's JSON-LD.
 
@@ -118,25 +118,25 @@ def extract_recipe(html: str, source_url: str) -> RecipeCreate | None:
     return None
 
 
-def _node_to_recipe(node: dict, source_url: str) -> RecipeCreate | None:
+def _node_to_recipe(node: dict, source_url: str) -> Recipe | None:
     name = _clean(str(node.get("name", "")))
     instructions = _instructions(node.get("recipeInstructions", []))
     raw_ingredients = node.get("recipeIngredient", [])
-    # Ingredient.id is required by the model but ignored by RecipeStore.create
-    # (the DB assigns real ids) — same convention as the LLM parse path.
+    # Ingredient.id is required by the wire contract but ignored by the
+    # backend on ingest (the DB assigns real ids).
     ingredients = [
         parse_ingredient(str(text), id=i)
         for i, text in enumerate(raw_ingredients)
         if str(text).strip()
     ]
 
-    # Quality gate: looser than ParseRecipeWorkflow._validate_recipe on
+    # Quality gate: looser than the backend's LLM parse validation on
     # purpose — JSON-LD legitimately omits times/servings/tags, and 0 is an
     # acceptable default for bulk ingest.
     if not name or not ingredients or not instructions:
         return None
 
-    return RecipeCreate(
+    return Recipe(
         name=name,
         instructions=instructions,
         ingredients=ingredients,
