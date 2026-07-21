@@ -20,6 +20,7 @@ from models import Job
 from store import ScrapeStore
 
 _IDLE_POLL_SECONDS = 3
+_ERROR_BACKOFF_SECONDS = 10
 
 _INSTRUCTION_WORDS = ("instruction", "direction", "method")
 
@@ -41,19 +42,36 @@ def _looks_like_recipe(text: str) -> bool:
 
 
 async def run_worker(store: ScrapeStore) -> None:
-    """Poll for jobs forever; runs as a background task in the app lifespan."""
+    """
+    Poll for jobs forever; runs as a background task in the app lifespan.
+
+    Nothing awaits this task, so an exception escaping the loop would kill the
+    worker invisibly and leave jobs sitting in 'pending' with no signal. Every
+    cycle is guarded — the frontier is durable, so backing off and retrying
+    resumes exactly where the failure hit.
+    """
     while True:
-        job = await store.claim_next_job()
-        if job is None:
-            await asyncio.sleep(_IDLE_POLL_SECONDS)
-            continue
-        print(f"[job {job.id}] claimed: {job.root_url}")
         try:
-            await _run_job(store, job)
+            await _poll_once(store)
         except Exception as e:
-            # Fail loud on the job, but keep the worker alive for the next one.
-            print(f"[job {job.id}] crashed: {e}")
-            await store.finish_job(job.id, "failed", error=str(e))
+            print(f"[worker] cycle failed, retrying in {_ERROR_BACKOFF_SECONDS}s: {e}")
+            await asyncio.sleep(_ERROR_BACKOFF_SECONDS)
+
+
+async def _poll_once(store: ScrapeStore) -> None:
+    """One cycle: claim and run a job, or idle when the queue is empty."""
+    job = await store.claim_next_job()
+    if job is None:
+        await asyncio.sleep(_IDLE_POLL_SECONDS)
+        return
+    print(f"[job {job.id}] claimed: {job.root_url}")
+    try:
+        await _run_job(store, job)
+    except Exception as e:
+        # A bad job is marked failed and skipped; a DB outage propagates to
+        # run_worker, which backs off and retries the same job.
+        print(f"[job {job.id}] crashed: {e}")
+        await store.finish_job(job.id, "failed", error=str(e))
 
 
 async def _run_job(store: ScrapeStore, job: Job) -> None:

@@ -1,3 +1,4 @@
+import asyncpg
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
@@ -28,7 +29,16 @@ async def ingest(recipe: RecipeCreate, request: Request):
     if existing_id is not None:
         return {"id": existing_id, "created": False}
 
-    recipe_id = await recipe_store.create(recipe)
+    try:
+        recipe_id = await recipe_store.create(recipe)
+    except asyncpg.UniqueViolationError:
+        # Lost a race past the lookup above. The unique index on source_url is
+        # the real dedup guarantee; this is just the read-back.
+        existing_id = await recipe_store.get_id_by_source_url(recipe.source_url)
+        if existing_id is None:
+            raise
+        return {"id": existing_id, "created": False}
+
     return {"id": recipe_id, "created": True}
 
 

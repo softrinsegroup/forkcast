@@ -143,7 +143,10 @@ class ScrapeStore:
         Claim the oldest pending/running job, FIFO — one job at a time.
 
         Re-claims `running` jobs so a crawl interrupted by a restart resumes.
-        SKIP LOCKED guards against a second replica claiming the same job.
+        SKIP LOCKED only serializes the claim statement itself; the row lock
+        ends when it commits, so this does NOT stop a second replica from
+        claiming a job already in flight. Single-replica only — running two
+        would need a lease column (owner + expiry) refreshed during the crawl.
         """
         async with self.db_pool.acquire() as conn:
             row = await conn.fetchrow(

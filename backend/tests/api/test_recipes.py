@@ -1,5 +1,6 @@
 from unittest.mock import AsyncMock, MagicMock
 
+import asyncpg
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -172,6 +173,29 @@ def test_ingest_duplicate_source_url_skips(client, mock_recipe_store):
     assert resp.status_code == 200
     assert resp.json() == {"id": 42, "created": False}
     mock_recipe_store.create.assert_not_awaited()
+
+
+def test_ingest_concurrent_duplicate_still_returns_200(client, mock_recipe_store):
+    # The lookup above is check-then-act: a second writer can slip past it and
+    # lose to the unique index. The scraper marks a page 'failed' on any non-200,
+    # so a race must still read back as a skip — never a 500 that costs a recipe.
+    mock_recipe_store.get_id_by_source_url = AsyncMock(side_effect=[None, 42])
+    mock_recipe_store.create = AsyncMock(side_effect=asyncpg.UniqueViolationError())
+
+    resp = client.post("/recipes/ingest", json=ingest_payload(), headers=auth())
+
+    assert resp.status_code == 200
+    assert resp.json() == {"id": 42, "created": False}
+
+
+def test_ingest_unique_violation_without_row_propagates(client, mock_recipe_store):
+    # A UniqueViolationError with no matching source_url is a different constraint
+    # failing. Swallowing it would report a phantom skip and silently drop data.
+    mock_recipe_store.get_id_by_source_url = AsyncMock(return_value=None)
+    mock_recipe_store.create = AsyncMock(side_effect=asyncpg.UniqueViolationError())
+
+    with pytest.raises(asyncpg.UniqueViolationError):
+        client.post("/recipes/ingest", json=ingest_payload(), headers=auth())
 
 
 def test_ingest_missing_source_url_returns_422(client):

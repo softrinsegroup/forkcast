@@ -4,7 +4,7 @@ FastAPI app: dashboard + job API + the crawl worker in one process.
 
 import asyncio
 import os
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 
@@ -32,6 +32,10 @@ async def lifespan(app: FastAPI):
     worker_task = asyncio.create_task(run_worker(store))
     yield
     worker_task.cancel()
+    # Await the cancellation before closing the pool, or a mid-query worker
+    # races the teardown and logs spurious connection errors on every deploy.
+    with suppress(asyncio.CancelledError):
+        await worker_task
     await db_pool.close()
 
 
