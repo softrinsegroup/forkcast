@@ -5,7 +5,6 @@ FastAPI app: dashboard + job API + the crawl worker in one process.
 import asyncio
 import os
 from contextlib import asynccontextmanager
-
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 
