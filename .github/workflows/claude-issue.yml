@@ -43,7 +43,7 @@ jobs:
       - name: Implement and open PR
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Left unset so the action mints a Claude GitHub App token. PRs opened
           # with the default GITHUB_TOKEN do not trigger test.yml (GitHub's
           # anti-recursion rule). Uncomment only if the app is not installed.
