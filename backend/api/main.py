@@ -40,49 +40,113 @@ log = structlog.get_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Init DB
-    db_pool = await init_db()
-    recipe_store = RecipeStore(db_pool)
-    weekly_plan_store = WeeklyPlanStore(db_pool)
-    shopping_item_store = ShoppingItemStore(db_pool)
-    prompt_store = PromptStore(db_pool)
-    user_store = UserStore(db_pool)
-    waitlist_store = WaitlistStore(db_pool)
-    log.info("startup", step="database")
+    try:
+        db_pool = await init_db()
+        recipe_store = RecipeStore(db_pool)
+        weekly_plan_store = WeeklyPlanStore(db_pool)
+        shopping_item_store = ShoppingItemStore(db_pool)
+        prompt_store = PromptStore(db_pool)
+        user_store = UserStore(db_pool)
+        waitlist_store = WaitlistStore(db_pool)
+        log.info("startup", step="database")
+    except Exception as exc:
+        log.error(
+            "startup_failed",
+            step="database",
+            error=str(exc),
+            error_type=type(exc).__name__,
+            exc_info=True,
+        )
+        raise RuntimeError(f"Failed to initialize database: {exc}") from exc
 
     # Init Vector DB
-    vector_store = await init_vector_store()
-    log.info("startup", step="vector_database")
+    try:
+        vector_store = await init_vector_store()
+        log.info("startup", step="vector_database")
+    except Exception as exc:
+        log.error(
+            "startup_failed",
+            step="vector_database",
+            error=str(exc),
+            error_type=type(exc).__name__,
+            exc_info=True,
+        )
+        raise RuntimeError(f"Failed to initialize vector store: {exc}") from exc
 
     # LangGraph checkpointer
-    async with AsyncPostgresSaver.from_conn_string(
-        os.getenv("DATABASE_URL")
-    ) as checkpointer:
+    try:
+        checkpointer_ctx = AsyncPostgresSaver.from_conn_string(
+            os.getenv("DATABASE_URL")
+        )
+        checkpointer = await checkpointer_ctx.__aenter__()
         await checkpointer.setup()
+        log.info("startup", step="checkpointer")
+    except Exception as exc:
+        log.error(
+            "startup_failed",
+            step="checkpointer",
+            error=str(exc),
+            error_type=type(exc).__name__,
+            exc_info=True,
+        )
+        raise RuntimeError(f"Failed to initialize LangGraph checkpointer: {exc}") from exc
 
-        # Init LangFuse
-        langfuse = get_langfuse_client()
-        if langfuse.auth_check():
-            log.info("startup", step="langfuse", authenticated=True)
-            langfuse_handler = CallbackHandler()
-        else:
-            log.warning("startup", step="langfuse", authenticated=False)
+    try:
+        # Init LangFuse (non-blocking: fall back to no-op handler if unavailable)
+        try:
+            langfuse = get_langfuse_client()
+            if langfuse.auth_check():
+                log.info("startup", step="langfuse", authenticated=True)
+                langfuse_handler = CallbackHandler()
+            else:
+                log.warning("startup", step="langfuse", authenticated=False)
+                langfuse_handler = None
+        except Exception as exc:
+            log.error(
+                "startup_warning",
+                step="langfuse",
+                error=str(exc),
+                error_type=type(exc).__name__,
+                exc_info=True,
+            )
             langfuse_handler = None
 
         # Init Anthropic client
-        model_agent = ChatAnthropic(model="claude-sonnet-4-6")
-        log.info("startup", step="anthropic")
+        try:
+            model_agent = ChatAnthropic(model="claude-sonnet-4-6")
+            log.info("startup", step="anthropic")
+        except Exception as exc:
+            log.error(
+                "startup_failed",
+                step="anthropic",
+                error=str(exc),
+                error_type=type(exc).__name__,
+                exc_info=True,
+            )
+            raise RuntimeError(f"Failed to initialize Anthropic client: {exc}") from exc
 
         # Create Graph
-        graph = create_graph(
-            model_agent=model_agent,
-            recipe_store=recipe_store,
-            weekly_plan_store=weekly_plan_store,
-            shopping_item_store=shopping_item_store,
-            prompt_store=prompt_store,
-            vector_store=vector_store,
-            checkpointer=checkpointer,
-            langfuse_handler=langfuse_handler,
-        )
+        try:
+            graph = create_graph(
+                model_agent=model_agent,
+                recipe_store=recipe_store,
+                weekly_plan_store=weekly_plan_store,
+                shopping_item_store=shopping_item_store,
+                prompt_store=prompt_store,
+                vector_store=vector_store,
+                checkpointer=checkpointer,
+                langfuse_handler=langfuse_handler,
+            )
+            log.info("startup", step="graph")
+        except Exception as exc:
+            log.error(
+                "startup_failed",
+                step="graph",
+                error=str(exc),
+                error_type=type(exc).__name__,
+                exc_info=True,
+            )
+            raise RuntimeError(f"Failed to create graph: {exc}") from exc
 
         # Store on app.state so routers can access via request.app.state
         app.state.model_agent = model_agent
@@ -96,14 +160,29 @@ async def lifespan(app: FastAPI):
         app.state.graph = graph
 
         # Create background tasks
-        reconcile_task = asyncio.create_task(
-            _reconcile_recipes_loop(recipe_store, vector_store)
-        )
+        try:
+            reconcile_task = asyncio.create_task(
+                _reconcile_recipes_loop(recipe_store, vector_store)
+            )
+            log.info("startup", step="background_tasks")
+        except Exception as exc:
+            log.error(
+                "startup_failed",
+                step="background_tasks",
+                error=str(exc),
+                error_type=type(exc).__name__,
+                exc_info=True,
+            )
+            raise RuntimeError(f"Failed to start background tasks: {exc}") from exc
+
+        log.info("startup_complete")
 
         yield
 
         # Cancel background tasks
         reconcile_task.cancel()
+    finally:
+        await checkpointer_ctx.__aexit__(None, None, None)
 
     # On app shutdown
     await db_pool.close()
