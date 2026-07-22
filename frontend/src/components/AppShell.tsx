@@ -1,13 +1,15 @@
-import { ChefHat, LogOut } from "lucide-react";
+import { ChefHat, LogOut, Moon, Sun } from "lucide-react";
 import type { User } from "@/lib/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/hooks/useTheme";
 import { ChatView } from "@/components/chat/ChatView";
 import { MealPlanView } from "@/components/mealplan/MealPlanView";
 import { API_BASE } from "@/lib/api";
 
 export function AppShell({ user }: { user: User }) {
+  const { theme, toggle } = useTheme();
   return (
     <Tabs defaultValue="chat" className="mx-auto flex h-full max-w-3xl flex-col gap-0">
       <header className="flex items-center justify-between gap-4 border-b px-4 py-3">
@@ -23,6 +25,14 @@ export function AppShell({ user }: { user: User }) {
           <span className="hidden text-sm text-muted-foreground sm:inline">
             {user.name ?? user.email}
           </span>
+          <button
+            type="button"
+            onClick={toggle}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
+          >
+            {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+          </button>
           <a
             href={`${API_BASE}/auth/logout`}
             title="Sign out"
